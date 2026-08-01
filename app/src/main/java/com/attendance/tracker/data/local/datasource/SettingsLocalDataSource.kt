@@ -8,35 +8,24 @@ import javax.inject.Inject
  * Local Data Source interface defining preference store interactions.
  */
 interface SettingsLocalDataSource {
-    /**
-     * Exposes a Flow emitting the theme mode configurations.
-     */
     fun getThemeMode(): Flow<String>
-
-    /**
-     * Persists the theme mode.
-     */
     suspend fun setThemeMode(themeMode: String)
 
-    /**
-     * Exposes a Flow emitting notification status.
-     */
     fun isNotificationsEnabled(): Flow<Boolean>
-
-    /**
-     * Persists the notification enabled/disabled state.
-     */
     suspend fun setNotificationsEnabled(enabled: Boolean)
 
-    /**
-     * Exposes a Flow emitting the last backup run timestamp.
-     */
     fun getLastBackupTimestamp(): Flow<Long>
-
-    /**
-     * Persists the last backup timestamp.
-     */
     suspend fun setLastBackupTimestamp(timestamp: Long)
+
+    // Reminders
+    fun isMorningReminderEnabled(): Flow<Boolean>
+    suspend fun setMorningReminderEnabled(enabled: Boolean)
+
+    fun isAttendanceReminderEnabled(): Flow<Boolean>
+    suspend fun setAttendanceReminderEnabled(enabled: Boolean)
+
+    fun isMissedReminderEnabled(): Flow<Boolean>
+    suspend fun setMissedReminderEnabled(enabled: Boolean)
 }
 
 /**
@@ -51,4 +40,12 @@ class SettingsLocalDataSourceImpl @Inject constructor(
     override suspend fun setNotificationsEnabled(enabled: Boolean) = settingsPreferences.setNotificationsEnabled(enabled)
     override fun getLastBackupTimestamp(): Flow<Long> = settingsPreferences.lastBackupFlow
     override suspend fun setLastBackupTimestamp(timestamp: Long) = settingsPreferences.setLastBackupTimestamp(timestamp)
+
+    // Reminders implementation
+    override fun isMorningReminderEnabled(): Flow<Boolean> = settingsPreferences.morningReminderFlow
+    override suspend fun setMorningReminderEnabled(enabled: Boolean) = settingsPreferences.setMorningReminderEnabled(enabled)
+    override fun isAttendanceReminderEnabled(): Flow<Boolean> = settingsPreferences.attendanceReminderFlow
+    override suspend fun setAttendanceReminderEnabled(enabled: Boolean) = settingsPreferences.setAttendanceReminderEnabled(enabled)
+    override fun isMissedReminderEnabled(): Flow<Boolean> = settingsPreferences.missedReminderFlow
+    override suspend fun setMissedReminderEnabled(enabled: Boolean) = settingsPreferences.setMissedReminderEnabled(enabled)
 }

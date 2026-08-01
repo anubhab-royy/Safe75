@@ -48,30 +48,60 @@ class SettingsViewModel @Inject constructor(
             initialValue = 0L
         )
 
-    /**
-     * Updates the persistent theme choice.
-     */
+    val morningReminderState: StateFlow<Boolean> = settingsRepository.isMorningReminderEnabled()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
+
+    val attendanceReminderState: StateFlow<Boolean> = settingsRepository.isAttendanceReminderEnabled()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
+
+    val missedReminderState: StateFlow<Boolean> = settingsRepository.isMissedReminderEnabled()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
+
     fun setThemeMode(themeMode: String) {
         viewModelScope.launch {
             settingsRepository.setThemeMode(themeMode)
         }
     }
 
-    /**
-     * Updates whether local push notifications should display.
-     */
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setNotificationsEnabled(enabled)
         }
     }
 
-    /**
-     * Refreshes the last local backup timestamp metadata.
-     */
     fun setLastBackupTimestamp(timestamp: Long) {
         viewModelScope.launch {
             settingsRepository.setLastBackupTimestamp(timestamp)
+        }
+    }
+
+    fun setMorningReminderEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setMorningReminderEnabled(enabled)
+        }
+    }
+
+    fun setAttendanceReminderEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setAttendanceReminderEnabled(enabled)
+        }
+    }
+
+    fun setMissedReminderEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setMissedReminderEnabled(enabled)
         }
     }
 }

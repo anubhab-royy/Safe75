@@ -1,5 +1,6 @@
 package com.attendance.tracker.core.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -17,6 +18,9 @@ import com.attendance.tracker.feature.attendance.AttendanceHistoryScreen
 import com.attendance.tracker.feature.attendance.AttendanceDetailsScreen
 import com.attendance.tracker.feature.planner.AttendanceSimulatorScreen
 import com.attendance.tracker.feature.planner.LeavePlannerScreen
+import com.attendance.tracker.feature.settings.NotificationSettingsScreen
+import com.attendance.tracker.feature.ocr.OCRImportScreen
+import com.attendance.tracker.feature.ocr.OCRReviewScreen
 import com.attendance.tracker.feature.welcome.WelcomeScreen
 
 /**
@@ -74,6 +78,12 @@ fun AppNavHost(
                 },
                 onNavigateToLeavePlanner = {
                     navController.navigate(Screen.LeavePlanner.route)
+                },
+                onNavigateToNotificationSettings = {
+                    navController.navigate(Screen.NotificationSettings.route)
+                },
+                onNavigateToOcr = {
+                    navController.navigate(Screen.Ocr.route)
                 }
             )
         }
@@ -156,6 +166,41 @@ fun AppNavHost(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
+            )
+        }
+
+        composable(Screen.NotificationSettings.route) {
+            NotificationSettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.Ocr.route) {
+            OCRImportScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToReview = { isTimetable, imageUri ->
+                    navController.navigate("ocr_review?isTimetable=$isTimetable&uri=${Uri.encode(imageUri.toString())}")
+                }
+            )
+        }
+
+        composable(
+            route = "ocr_review?isTimetable={isTimetable}&uri={uri}",
+            arguments = listOf(
+                navArgument("isTimetable") { type = NavType.BoolType },
+                navArgument("uri") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val isTimetable = backStackEntry.arguments?.getBoolean("isTimetable") ?: true
+            val uriStr = backStackEntry.arguments?.getString("uri") ?: ""
+            OCRReviewScreen(
+                isTimetable = isTimetable,
+                imageUri = Uri.parse(uriStr),
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

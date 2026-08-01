@@ -41,7 +41,9 @@ fun HomeScreen(
     onNavigateToAddEditSchedule: (Long) -> Unit,
     onNavigateToAttendanceHistory: () -> Unit,
     onNavigateToSimulator: () -> Unit,
-    onNavigateToLeavePlanner: () -> Unit
+    onNavigateToLeavePlanner: () -> Unit,
+    onNavigateToNotificationSettings: () -> Unit,
+    onNavigateToOcr: () -> Unit
 ) {
     val navController = rememberNavController()
 
@@ -103,13 +105,13 @@ fun HomeScreen(
                 )
             }
             composable(Screen.Settings.route) {
-                SettingsScreen()
+                SettingsScreen(
+                    onNavigateToNotificationSettings = onNavigateToNotificationSettings,
+                    onNavigateToOcr = onNavigateToOcr
+                )
             }
 
             // Future module placeholders (Phase 2 features ready to be wired up)
-            composable(Screen.Ocr.route) {
-                PlaceholderScreen(title = "OCR Screen")
-            }
             composable(Screen.Planner.route) {
                 PlaceholderScreen(title = "Planner Screen")
             }

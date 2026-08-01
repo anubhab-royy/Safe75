@@ -33,11 +33,20 @@ class SettingsRepositoryImpl @Inject constructor(
     }
 
     override fun getAttendanceTarget(): Flow<AttendanceTarget> {
-        // Returns default target requirements initially
         return flowOf(AttendanceTarget(75.0, 85.0))
     }
 
     override suspend fun updateAttendanceTarget(target: AttendanceTarget) {
-        // Mock execution for phase 1. Detailed persistence will be implemented next.
+        // ad-hoc implementation
     }
+
+    // Reminders
+    override fun isMorningReminderEnabled(): Flow<Boolean> = localDataSource.isMorningReminderEnabled()
+    override suspend fun setMorningReminderEnabled(enabled: Boolean) = localDataSource.setMorningReminderEnabled(enabled)
+
+    override fun isAttendanceReminderEnabled(): Flow<Boolean> = localDataSource.isAttendanceReminderEnabled()
+    override suspend fun setAttendanceReminderEnabled(enabled: Boolean) = localDataSource.setAttendanceReminderEnabled(enabled)
+
+    override fun isMissedReminderEnabled(): Flow<Boolean> = localDataSource.isMissedReminderEnabled()
+    override suspend fun setMissedReminderEnabled(enabled: Boolean) = localDataSource.setMissedReminderEnabled(enabled)
 }

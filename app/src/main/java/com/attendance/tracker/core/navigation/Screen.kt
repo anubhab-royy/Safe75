@@ -43,6 +43,8 @@ sealed class Screen(val route: String) {
 
     object LeavePlanner : Screen("leave_planner")
 
+    object NotificationSettings : Screen("notification_settings")
+
     // Future Module Placeholders (For scalability in Phase 2)
     object Ocr : Screen("ocr_dest")
     object Planner : Screen("planner_dest")

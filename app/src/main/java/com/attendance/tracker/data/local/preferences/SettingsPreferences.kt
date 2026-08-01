@@ -22,7 +22,12 @@ class SettingsPreferences @Inject constructor(
         val KEY_THEME = stringPreferencesKey("theme_mode")
         val KEY_NOTIFICATIONS = booleanPreferencesKey("notifications_enabled")
         val KEY_LAST_BACKUP = longPreferencesKey("last_backup_timestamp")
-        
+
+        // Reminder Keys
+        val KEY_MORNING_REMINDER = booleanPreferencesKey("morning_reminder_enabled")
+        val KEY_ATTENDANCE_REMINDER = booleanPreferencesKey("attendance_reminder_enabled")
+        val KEY_MISSED_REMINDER = booleanPreferencesKey("missed_reminder_enabled")
+
         // Future preference keys
         val KEY_REQUIRED_ATTENDANCE = stringPreferencesKey("required_attendance_percentage")
         val KEY_PERSONAL_GOAL_ATTENDANCE = stringPreferencesKey("personal_goal_attendance_percentage")
@@ -49,6 +54,19 @@ class SettingsPreferences @Inject constructor(
         preferences[KEY_LAST_BACKUP] ?: 0L
     }
 
+    // Flow getters for reminders
+    val morningReminderFlow: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[KEY_MORNING_REMINDER] ?: true
+    }
+
+    val attendanceReminderFlow: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[KEY_ATTENDANCE_REMINDER] ?: true
+    }
+
+    val missedReminderFlow: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[KEY_MISSED_REMINDER] ?: true
+    }
+
     /**
      * Persists the selected theme mode.
      */
@@ -73,6 +91,25 @@ class SettingsPreferences @Inject constructor(
     suspend fun setLastBackupTimestamp(timestamp: Long) {
         dataStore.edit { preferences ->
             preferences[KEY_LAST_BACKUP] = timestamp
+        }
+    }
+
+    // Setters for reminders
+    suspend fun setMorningReminderEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_MORNING_REMINDER] = enabled
+        }
+    }
+
+    suspend fun setAttendanceReminderEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_ATTENDANCE_REMINDER] = enabled
+        }
+    }
+
+    suspend fun setMissedReminderEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_MISSED_REMINDER] = enabled
         }
     }
 }
