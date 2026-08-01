@@ -36,7 +36,9 @@ import com.attendance.tracker.feature.subject.SubjectsScreen
  * via a nested child NavHost for enhanced modularity.
  */
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    onNavigateToAddEditSubject: (Long) -> Unit
+) {
     val navController = rememberNavController()
 
     val items = listOf(
@@ -83,7 +85,9 @@ fun HomeScreen() {
                 DashboardScreen()
             }
             composable(Screen.Subjects.route) {
-                SubjectsScreen()
+                SubjectsScreen(
+                    onNavigateToAddEditSubject = onNavigateToAddEditSubject
+                )
             }
             composable(Screen.Schedule.route) {
                 ScheduleScreen()

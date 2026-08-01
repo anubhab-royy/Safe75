@@ -16,8 +16,12 @@ object SubjectMapper {
         return Subject(
             id = entity.id,
             name = entity.name,
-            code = entity.code,
-            creditHours = entity.creditHours
+            facultyName = entity.facultyName,
+            color = entity.color,
+            requiredAttendancePercentage = entity.requiredAttendancePercentage,
+            personalAttendanceGoal = entity.personalAttendanceGoal,
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt
         )
     }
 
@@ -28,8 +32,12 @@ object SubjectMapper {
         return SubjectEntity(
             id = domain.id,
             name = domain.name,
-            code = domain.code,
-            creditHours = domain.creditHours
+            facultyName = domain.facultyName,
+            color = domain.color,
+            requiredAttendancePercentage = domain.requiredAttendancePercentage,
+            personalAttendanceGoal = domain.personalAttendanceGoal,
+            createdAt = domain.createdAt,
+            updatedAt = domain.updatedAt
         )
     }
 
@@ -40,8 +48,10 @@ object SubjectMapper {
         return SubjectUiModel(
             id = domain.id,
             name = domain.name,
-            code = domain.code,
-            creditHours = domain.creditHours
+            faculty = domain.facultyName,
+            requiredAttendance = domain.requiredAttendancePercentage,
+            attendanceGoal = domain.personalAttendanceGoal,
+            color = domain.color
         )
     }
 
@@ -52,8 +62,10 @@ object SubjectMapper {
         return Subject(
             id = uiModel.id,
             name = uiModel.name,
-            code = uiModel.code,
-            creditHours = uiModel.creditHours
+            facultyName = uiModel.faculty,
+            color = uiModel.color,
+            requiredAttendancePercentage = uiModel.requiredAttendance,
+            personalAttendanceGoal = uiModel.attendanceGoal
         )
     }
 }

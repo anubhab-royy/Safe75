@@ -5,13 +5,13 @@ import com.attendance.tracker.domain.repository.SubjectRepository
 import javax.inject.Inject
 
 /**
- * Domain Use Case to fetch all study subjects synchronously.
+ * Domain Use Case to fetch a single subject by ID.
  */
-class GetSubjectsUseCase @Inject constructor(
+class GetSubjectUseCase @Inject constructor(
     private val repository: SubjectRepository
 ) {
     /**
-     * Executes the fetch subjects transaction.
+     * Executes the fetch subject by ID transaction.
      */
-    suspend operator fun invoke(): List<Subject> = repository.getSubjects()
+    suspend operator fun invoke(id: Long): Subject? = repository.getSubjectById(id)
 }

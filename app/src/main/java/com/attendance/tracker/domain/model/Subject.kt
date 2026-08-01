@@ -6,6 +6,10 @@ package com.attendance.tracker.domain.model
 data class Subject(
     val id: Long = 0L,
     val name: String,
-    val code: String? = null,
-    val creditHours: Int = 0
+    val facultyName: String? = null,
+    val color: Int = 0,
+    val requiredAttendancePercentage: Int = 75,
+    val personalAttendanceGoal: Int = 85,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
 )

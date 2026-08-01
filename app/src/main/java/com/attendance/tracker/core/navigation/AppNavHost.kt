@@ -3,12 +3,15 @@ package com.attendance.tracker.core.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.attendance.tracker.feature.home.HomeScreen
 import com.attendance.tracker.feature.splash.SplashScreen
+import com.attendance.tracker.feature.subject.AddEditSubjectScreen
 import com.attendance.tracker.feature.welcome.WelcomeScreen
 
 /**
@@ -51,7 +54,30 @@ fun AppNavHost(
 
         // Main Graph: Launches bottom navigation shell
         composable(route = Screen.MainGraph.route) {
-            HomeScreen()
+            HomeScreen(
+                onNavigateToAddEditSubject = { subjectId ->
+                    navController.navigate(Screen.AddEditSubject.createRoute(subjectId))
+                }
+            )
+        }
+
+        // Detail Screens hosted outside the bottom bar stack
+        composable(
+            route = Screen.AddEditSubject.route,
+            arguments = listOf(
+                navArgument("subjectId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
+            )
+        ) { backStackEntry ->
+            val subjectId = backStackEntry.arguments?.getLong("subjectId") ?: -1L
+            AddEditSubjectScreen(
+                subjectId = subjectId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }

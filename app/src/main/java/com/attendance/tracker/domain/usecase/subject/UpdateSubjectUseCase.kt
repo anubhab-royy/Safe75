@@ -13,5 +13,5 @@ class UpdateSubjectUseCase @Inject constructor(
     /**
      * Executes the update subject transaction.
      */
-    suspend operator fun invoke(subject: Subject): Long = repository.insertSubject(subject)
+    suspend operator fun invoke(subject: Subject): Int = repository.updateSubject(subject)
 }

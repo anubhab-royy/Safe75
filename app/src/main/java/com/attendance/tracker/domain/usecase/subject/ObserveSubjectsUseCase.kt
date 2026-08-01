@@ -2,16 +2,17 @@ package com.attendance.tracker.domain.usecase.subject
 
 import com.attendance.tracker.domain.model.Subject
 import com.attendance.tracker.domain.repository.SubjectRepository
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 /**
- * Domain Use Case to fetch all study subjects synchronously.
+ * Domain Use Case to observe a live Flow of all study subjects.
  */
-class GetSubjectsUseCase @Inject constructor(
+class ObserveSubjectsUseCase @Inject constructor(
     private val repository: SubjectRepository
 ) {
     /**
-     * Executes the fetch subjects transaction.
+     * Executes the observe subjects flow.
      */
-    suspend operator fun invoke(): List<Subject> = repository.getSubjects()
+    operator fun invoke(): Flow<List<Subject>> = repository.observeSubjects()
 }

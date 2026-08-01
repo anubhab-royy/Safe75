@@ -18,6 +18,13 @@ sealed class Screen(val route: String) {
     object Schedule : Screen("schedule_dest")
     object Settings : Screen("settings_dest")
 
+    // Subject Detail Screens (Taking over full screen - no bottom bar)
+    object AddEditSubject : Screen("add_edit_subject?subjectId={subjectId}") {
+        fun createRoute(subjectId: Long = -1L): String {
+            return "add_edit_subject?subjectId=$subjectId"
+        }
+    }
+
     // Future Module Placeholders (For scalability in Phase 2)
     object Ocr : Screen("ocr_dest")
     object Planner : Screen("planner_dest")

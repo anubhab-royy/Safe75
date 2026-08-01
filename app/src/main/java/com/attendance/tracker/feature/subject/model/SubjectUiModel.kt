@@ -6,6 +6,8 @@ package com.attendance.tracker.feature.subject.model
 data class SubjectUiModel(
     val id: Long,
     val name: String,
-    val code: String? = null,
-    val creditHours: Int = 0
+    val faculty: String? = null,
+    val requiredAttendance: Int = 75,
+    val attendanceGoal: Int = 85,
+    val color: Int = 0
 )

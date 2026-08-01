@@ -13,7 +13,5 @@ class DeleteSubjectUseCase @Inject constructor(
     /**
      * Executes the delete subject transaction.
      */
-    suspend operator fun invoke(subject: Subject) {
-        repository.deleteSubject(subject)
-    }
+    suspend operator fun invoke(subject: Subject): Int = repository.deleteSubject(subject)
 }

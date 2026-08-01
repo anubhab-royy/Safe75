@@ -15,21 +15,37 @@ class SubjectRepositoryImpl @Inject constructor(
     private val localDataSource: SubjectLocalDataSource
 ) : SubjectRepository {
 
-    override fun getSubjects(): Flow<List<Subject>> {
-        return localDataSource.getAllSubjects().map { list ->
+    override fun observeSubjects(): Flow<List<Subject>> {
+        return localDataSource.observeSubjects().map { list ->
             list.map { SubjectMapper.entityToDomain(it) }
         }
     }
 
+    override suspend fun getSubjects(): List<Subject> {
+        return localDataSource.getSubjects().map { SubjectMapper.entityToDomain(it) }
+    }
+
     override suspend fun getSubjectById(id: Long): Subject? {
-        return null // Skeleton placeholder, implemented in later phases.
+        return localDataSource.getSubject(id)?.let { SubjectMapper.entityToDomain(it) }
     }
 
     override suspend fun insertSubject(subject: Subject): Long {
         return localDataSource.insertSubject(SubjectMapper.domainToEntity(subject))
     }
 
-    override suspend fun deleteSubject(subject: Subject) {
-        localDataSource.deleteSubject(SubjectMapper.domainToEntity(subject))
+    override suspend fun updateSubject(subject: Subject): Int {
+        return localDataSource.updateSubject(SubjectMapper.domainToEntity(subject))
+    }
+
+    override suspend fun deleteSubject(subject: Subject): Int {
+        return localDataSource.deleteSubject(SubjectMapper.domainToEntity(subject))
+    }
+
+    override suspend fun searchSubjects(query: String): List<Subject> {
+        return localDataSource.searchSubjects(query).map { SubjectMapper.entityToDomain(it) }
+    }
+
+    override suspend fun countSubjects(): Int {
+        return localDataSource.countSubjects()
     }
 }

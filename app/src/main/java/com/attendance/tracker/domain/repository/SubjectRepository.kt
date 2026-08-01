@@ -10,7 +10,12 @@ interface SubjectRepository {
     /**
      * Exposes a Flow emitting all configured subjects.
      */
-    fun getSubjects(): Flow<List<Subject>>
+    fun observeSubjects(): Flow<List<Subject>>
+
+    /**
+     * Fetches all subjects stored in the local storage.
+     */
+    suspend fun getSubjects(): List<Subject>
 
     /**
      * Fetches a specific subject by its unique database ID.
@@ -23,7 +28,22 @@ interface SubjectRepository {
     suspend fun insertSubject(subject: Subject): Long
 
     /**
+     * Updates an existing subject.
+     */
+    suspend fun updateSubject(subject: Subject): Int
+
+    /**
      * Removes a subject from the local store.
      */
-    suspend fun deleteSubject(subject: Subject)
+    suspend fun deleteSubject(subject: Subject): Int
+
+    /**
+     * Searches subjects matching the specified query.
+     */
+    suspend fun searchSubjects(query: String): List<Subject>
+
+    /**
+     * Counts the total number of subjects.
+     */
+    suspend fun countSubjects(): Int
 }

@@ -12,17 +12,42 @@ interface SubjectLocalDataSource {
     /**
      * Exposes a Flow emitting all stored subject entities.
      */
-    fun getAllSubjects(): Flow<List<SubjectEntity>>
+    fun observeSubjects(): Flow<List<SubjectEntity>>
 
     /**
-     * Inserts or updates a subject entity.
+     * Fetches all subjects stored in the database.
+     */
+    suspend fun getSubjects(): List<SubjectEntity>
+
+    /**
+     * Fetches a specific subject by its unique database ID.
+     */
+    suspend fun getSubject(id: Long): SubjectEntity?
+
+    /**
+     * Searches subjects by name or faculty name.
+     */
+    suspend fun searchSubjects(query: String): List<SubjectEntity>
+
+    /**
+     * Counts the total number of subjects in the database.
+     */
+    suspend fun countSubjects(): Int
+
+    /**
+     * Inserts a subject entity.
      */
     suspend fun insertSubject(subject: SubjectEntity): Long
 
     /**
+     * Updates an existing subject entity.
+     */
+    suspend fun updateSubject(subject: SubjectEntity): Int
+
+    /**
      * Deletes a subject entity from local storage.
      */
-    suspend fun deleteSubject(subject: SubjectEntity)
+    suspend fun deleteSubject(subject: SubjectEntity): Int
 }
 
 /**
@@ -31,7 +56,12 @@ interface SubjectLocalDataSource {
 class SubjectLocalDataSourceImpl @Inject constructor(
     private val subjectDao: SubjectDao
 ) : SubjectLocalDataSource {
-    override fun getAllSubjects(): Flow<List<SubjectEntity>> = subjectDao.getAllSubjects()
+    override fun observeSubjects(): Flow<List<SubjectEntity>> = subjectDao.observeSubjects()
+    override suspend fun getSubjects(): List<SubjectEntity> = subjectDao.getSubjects()
+    override suspend fun getSubject(id: Long): SubjectEntity? = subjectDao.getSubject(id)
+    override suspend fun searchSubjects(query: String): List<SubjectEntity> = subjectDao.searchSubjects(query)
+    override suspend fun countSubjects(): Int = subjectDao.countSubjects()
     override suspend fun insertSubject(subject: SubjectEntity): Long = subjectDao.insertSubject(subject)
-    override suspend fun deleteSubject(subject: SubjectEntity) = subjectDao.deleteSubject(subject)
+    override suspend fun updateSubject(subject: SubjectEntity): Int = subjectDao.updateSubject(subject)
+    override suspend fun deleteSubject(subject: SubjectEntity): Int = subjectDao.deleteSubject(subject)
 }
