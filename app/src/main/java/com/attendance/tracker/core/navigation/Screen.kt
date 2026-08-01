@@ -31,6 +31,14 @@ sealed class Screen(val route: String) {
         }
     }
 
+    object AttendanceHistory : Screen("attendance_history")
+
+    object AttendanceDetails : Screen("attendance_details?attendanceId={attendanceId}") {
+        fun createRoute(attendanceId: Long): String {
+            return "attendance_details?attendanceId=$attendanceId"
+        }
+    }
+
     // Future Module Placeholders (For scalability in Phase 2)
     object Ocr : Screen("ocr_dest")
     object Planner : Screen("planner_dest")

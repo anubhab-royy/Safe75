@@ -3,9 +3,11 @@ package com.attendance.tracker.data.local.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.attendance.tracker.data.local.database.dao.AttendanceDao
 import com.attendance.tracker.data.local.database.dao.ScheduleDao
 import com.attendance.tracker.data.local.database.dao.SemesterDao
 import com.attendance.tracker.data.local.database.dao.SubjectDao
+import com.attendance.tracker.data.local.database.entity.AttendanceEntity
 import com.attendance.tracker.data.local.database.entity.ScheduleEntity
 import com.attendance.tracker.data.local.database.entity.SemesterVersionEntity
 import com.attendance.tracker.data.local.database.entity.SubjectEntity
@@ -17,7 +19,8 @@ import com.attendance.tracker.data.local.database.entity.SubjectEntity
     entities = [
         SubjectEntity::class,
         ScheduleEntity::class,
-        SemesterVersionEntity::class
+        SemesterVersionEntity::class,
+        AttendanceEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -38,4 +41,9 @@ abstract class AppDatabase : RoomDatabase() {
      * Exposes Room Semester Version database operations.
      */
     abstract fun semesterDao(): SemesterDao
+
+    /**
+     * Exposes Room Attendance database operations.
+     */
+    abstract fun attendanceDao(): AttendanceDao
 }

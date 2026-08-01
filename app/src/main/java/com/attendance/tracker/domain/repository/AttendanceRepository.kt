@@ -1,6 +1,6 @@
 package com.attendance.tracker.domain.repository
 
-import com.attendance.tracker.domain.model.AttendanceRecord
+import com.attendance.tracker.domain.model.Attendance
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
@@ -8,23 +8,34 @@ import java.time.LocalDate
  * Repository interface defining operations for logging and analyzing attendance records.
  */
 interface AttendanceRepository {
-    /**
-     * Exposes a Flow emitting all attendance logs for a specific subject.
-     */
-    fun getAttendanceRecordsForSubject(subjectId: Long): Flow<List<AttendanceRecord>>
 
-    /**
-     * Exposes a Flow emitting attendance logs registered on a specific calendar date.
-     */
-    fun getAttendanceRecordsForDate(date: LocalDate): Flow<List<AttendanceRecord>>
+    fun observeAttendanceForSubject(subjectId: Long): Flow<List<Attendance>>
 
-    /**
-     * Inserts or updates an attendance log entry, returning its database ID.
-     */
-    suspend fun insertAttendanceRecord(record: AttendanceRecord): Long
+    fun observeAttendanceForDate(date: LocalDate): Flow<List<Attendance>>
 
-    /**
-     * Removes an attendance entry.
-     */
-    suspend fun deleteAttendanceRecord(record: AttendanceRecord)
+    fun observeTodayAttendance(date: LocalDate): Flow<List<Attendance>>
+
+    fun observeAttendanceHistory(): Flow<List<Attendance>>
+
+    fun observeAttendanceById(id: Long): Flow<Attendance?>
+
+    suspend fun getAttendanceById(id: Long): Attendance?
+
+    suspend fun getAttendanceForDateSync(date: LocalDate): List<Attendance>
+
+    suspend fun insertAttendance(attendance: Attendance): Long
+
+    suspend fun updateAttendance(attendance: Attendance): Int
+
+    suspend fun deleteAttendance(attendance: Attendance): Int
+
+    suspend fun checkDuplicateAttendance(subjectId: Long, scheduleId: Long, date: LocalDate): Boolean
+
+    fun countPresent(): Flow<Int>
+
+    fun countAbsent(): Flow<Int>
+
+    fun countCancelled(): Flow<Int>
+
+    fun searchAttendance(query: String): Flow<List<Attendance>>
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.attendance.tracker.data.local.database.AppDatabase
 import com.attendance.tracker.data.local.database.dao.SubjectDao
+import com.attendance.tracker.data.local.database.dao.AttendanceDao
 import com.attendance.tracker.data.local.database.dao.ScheduleDao
 import com.attendance.tracker.data.local.database.dao.SemesterDao
 import dagger.Module
@@ -49,5 +50,11 @@ object DatabaseModule {
     @Singleton
     fun provideSemesterDao(database: AppDatabase): SemesterDao {
         return database.semesterDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAttendanceDao(database: AppDatabase): AttendanceDao {
+        return database.attendanceDao()
     }
 }

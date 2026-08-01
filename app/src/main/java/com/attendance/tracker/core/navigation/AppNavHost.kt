@@ -13,6 +13,8 @@ import com.attendance.tracker.feature.home.HomeScreen
 import com.attendance.tracker.feature.splash.SplashScreen
 import com.attendance.tracker.feature.subject.AddEditSubjectScreen
 import com.attendance.tracker.feature.schedule.AddEditScheduleScreen
+import com.attendance.tracker.feature.attendance.AttendanceHistoryScreen
+import com.attendance.tracker.feature.attendance.AttendanceDetailsScreen
 import com.attendance.tracker.feature.welcome.WelcomeScreen
 
 /**
@@ -61,6 +63,9 @@ fun AppNavHost(
                 },
                 onNavigateToAddEditSchedule = { scheduleId ->
                     navController.navigate(Screen.AddEditSchedule.createRoute(scheduleId))
+                },
+                onNavigateToAttendanceHistory = {
+                    navController.navigate(Screen.AttendanceHistory.route)
                 }
             )
         }
@@ -96,6 +101,34 @@ fun AppNavHost(
             val scheduleId = backStackEntry.arguments?.getLong("scheduleId") ?: -1L
             AddEditScheduleScreen(
                 scheduleId = scheduleId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.AttendanceHistory.route) {
+            AttendanceHistoryScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAttendanceDetails = { attendanceId ->
+                    navController.navigate(Screen.AttendanceDetails.createRoute(attendanceId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.AttendanceDetails.route,
+            arguments = listOf(
+                navArgument("attendanceId") {
+                    type = NavType.LongType
+                }
+            )
+        ) { backStackEntry ->
+            val attendanceId = backStackEntry.arguments?.getLong("attendanceId") ?: 0L
+            AttendanceDetailsScreen(
+                attendanceId = attendanceId,
                 onNavigateBack = {
                     navController.popBackStack()
                 }

@@ -38,7 +38,8 @@ import com.attendance.tracker.feature.subject.SubjectsScreen
 @Composable
 fun HomeScreen(
     onNavigateToAddEditSubject: (Long) -> Unit,
-    onNavigateToAddEditSchedule: (Long) -> Unit
+    onNavigateToAddEditSchedule: (Long) -> Unit,
+    onNavigateToAttendanceHistory: () -> Unit
 ) {
     val navController = rememberNavController()
 
@@ -83,7 +84,9 @@ fun HomeScreen(
                 .padding(innerPadding)
         ) {
             composable(Screen.Dashboard.route) {
-                DashboardScreen()
+                DashboardScreen(
+                    onNavigateToAttendanceHistory = onNavigateToAttendanceHistory
+                )
             }
             composable(Screen.Subjects.route) {
                 SubjectsScreen(
@@ -99,7 +102,7 @@ fun HomeScreen(
                 SettingsScreen()
             }
 
-            // Future scalability placeholders (Phase 2 features ready to be wired up)
+            // Future module placeholders (Phase 2 features ready to be wired up)
             composable(Screen.Ocr.route) {
                 PlaceholderScreen(title = "OCR Screen")
             }
