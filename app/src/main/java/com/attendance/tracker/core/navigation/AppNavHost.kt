@@ -22,6 +22,12 @@ import com.attendance.tracker.feature.settings.NotificationSettingsScreen
 import com.attendance.tracker.feature.ocr.OCRImportScreen
 import com.attendance.tracker.feature.ocr.OCRReviewScreen
 import com.attendance.tracker.feature.welcome.WelcomeScreen
+import com.attendance.tracker.feature.archive.ArchiveDetailsScreen
+import com.attendance.tracker.feature.archive.ArchiveScreen
+import com.attendance.tracker.feature.backup.BackupScreen
+import com.attendance.tracker.feature.backup.RestoreScreen
+import com.attendance.tracker.feature.backup.SemesterResetScreen
+import com.attendance.tracker.feature.integrity.IntegrityScreen
 
 /**
  * Root Navigation Graph configuring Splash, Welcome, and transitions to Main content.
@@ -84,6 +90,24 @@ fun AppNavHost(
                 },
                 onNavigateToOcr = {
                     navController.navigate(Screen.Ocr.route)
+                },
+                onNavigateToBackup = {
+                    navController.navigate(Screen.Backup.route)
+                },
+                onNavigateToRestore = {
+                    navController.navigate(Screen.Restore.route)
+                },
+                onNavigateToArchive = {
+                    navController.navigate(Screen.Archive.route)
+                },
+                onNavigateToArchiveDetails = { archiveId ->
+                    navController.navigate(Screen.ArchiveDetails.createRoute(archiveId))
+                },
+                onNavigateToSemesterReset = {
+                    navController.navigate(Screen.SemesterReset.route)
+                },
+                onNavigateToIntegrity = {
+                    navController.navigate(Screen.Integrity.route)
                 }
             )
         }
@@ -200,6 +224,59 @@ fun AppNavHost(
             OCRReviewScreen(
                 isTimetable = isTimetable,
                 imageUri = Uri.parse(uriStr),
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ---- Data Management & Semester Lifecycle (Phase 7) ----
+
+        composable(Screen.Backup.route) {
+            BackupScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToRestore = { navController.navigate(Screen.Restore.route) },
+                onNavigateToIntegrity = { navController.navigate(Screen.Integrity.route) },
+                onNavigateToSemesterReset = { navController.navigate(Screen.SemesterReset.route) }
+            )
+        }
+
+        composable(Screen.Restore.route) {
+            RestoreScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.SemesterReset.route) {
+            SemesterResetScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Archive.route) {
+            ArchiveScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetails = { archiveId ->
+                    navController.navigate(Screen.ArchiveDetails.createRoute(archiveId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.ArchiveDetails.route,
+            arguments = listOf(
+                navArgument("archiveId") {
+                    type = NavType.LongType
+                }
+            )
+        ) { backStackEntry ->
+            val archiveId = backStackEntry.arguments?.getLong("archiveId") ?: 0L
+            ArchiveDetailsScreen(
+                archiveId = archiveId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Integrity.route) {
+            IntegrityScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

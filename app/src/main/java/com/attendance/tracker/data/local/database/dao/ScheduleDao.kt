@@ -65,4 +65,16 @@ interface ScheduleDao {
         start: LocalTime,
         end: LocalTime
     ): List<ScheduleEntity>
+
+    /** Deletes ALL schedules. Used during semester reset when keepSchedules = false. */
+    @Query("DELETE FROM schedules")
+    suspend fun deleteAllSchedules(): Int
+
+    /** Returns all schedules for backup serialization. */
+    @Query("SELECT * FROM schedules ORDER BY versionId ASC, dayOfWeek ASC, startTime ASC")
+    suspend fun getAllSchedules(): List<ScheduleEntity>
+
+    /** Inserts or replaces a schedule. Used for restore operations. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSchedule(schedule: ScheduleEntity): Long
 }

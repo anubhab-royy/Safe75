@@ -15,8 +15,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,13 +43,18 @@ import com.attendance.tracker.core.ui.theme.Dimensions
 
 /**
  * Screen presenting general settings options, including theme toggles,
- * notifications, and triggers to import data via OCR.
+ * notifications, data management (backup / archive / reset), and OCR import.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateToNotificationSettings: () -> Unit,
     onNavigateToOcr: () -> Unit,
+    onNavigateToBackup: () -> Unit,
+    onNavigateToRestore: () -> Unit,
+    onNavigateToArchive: () -> Unit,
+    onNavigateToSemesterReset: () -> Unit,
+    onNavigateToIntegrity: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val activeTheme by viewModel.themeState.collectAsState()
@@ -134,6 +144,42 @@ fun SettingsScreen(
                 }
             }
 
+            // Data Management section (Phase 7)
+            Text(
+                text = "Data Management",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+            SettingsLinkCard(
+                icon = Icons.Default.Backup,
+                title = "Backup & Restore",
+                subtitle = "Export your data as a JSON backup file.",
+                onClick = onNavigateToBackup
+            )
+            SettingsLinkCard(
+                icon = Icons.Default.Restore,
+                title = "Restore from Backup",
+                subtitle = "Import and selectively restore a backup file.",
+                onClick = onNavigateToRestore
+            )
+            SettingsLinkCard(
+                icon = Icons.Default.Archive,
+                title = "Semester Archive",
+                subtitle = "Browse archived semesters and restore past data.",
+                onClick = onNavigateToArchive
+            )
+            SettingsLinkCard(
+                icon = Icons.Default.RestartAlt,
+                title = "Semester Reset",
+                subtitle = "Archive the current semester and start fresh.",
+                onClick = onNavigateToSemesterReset
+            )
+            SettingsLinkCard(
+                icon = Icons.Default.HealthAndSafety,
+                title = "Data Integrity",
+                subtitle = "Scan the database for broken references and orphan records.",
+                onClick = onNavigateToIntegrity
+            )
+
             // Theme Options Panel
             Text(
                 text = "Application Theme",
@@ -157,6 +203,47 @@ fun SettingsScreen(
                     label = "Dark Mode",
                     isSelected = activeTheme == "DARK",
                     onClick = { viewModel.setThemeMode("DARK") }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsLinkCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(Dimensions.SpacingMedium),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(end = Dimensions.SpacingMedium)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             }
         }

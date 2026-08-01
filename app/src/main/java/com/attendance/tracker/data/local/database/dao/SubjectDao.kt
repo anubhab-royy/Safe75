@@ -61,4 +61,12 @@ interface SubjectDao {
      */
     @Delete
     suspend fun deleteSubject(subject: SubjectEntity): Int
+
+    /** Deletes ALL subjects. Used during semester reset when keepSubjects = false. */
+    @Query("DELETE FROM subjects")
+    suspend fun deleteAllSubjects(): Int
+
+    /** Inserts a subject, replacing on conflict. Used for restore operations. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSubject(subject: SubjectEntity): Long
 }

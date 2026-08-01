@@ -3,10 +3,11 @@ package com.attendance.tracker.di
 import android.content.Context
 import androidx.room.Room
 import com.attendance.tracker.data.local.database.AppDatabase
-import com.attendance.tracker.data.local.database.dao.SubjectDao
+import com.attendance.tracker.data.local.database.dao.ArchiveDao
 import com.attendance.tracker.data.local.database.dao.AttendanceDao
 import com.attendance.tracker.data.local.database.dao.ScheduleDao
 import com.attendance.tracker.data.local.database.dao.SemesterDao
+import com.attendance.tracker.data.local.database.dao.SubjectDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,7 +31,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "attendance_tracker_db"
-        ).fallbackToDestructiveMigration()
+        ).fallbackToDestructiveMigration(true)
          .build()
     }
 
@@ -57,4 +58,11 @@ object DatabaseModule {
     fun provideAttendanceDao(database: AppDatabase): AttendanceDao {
         return database.attendanceDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideArchiveDao(database: AppDatabase): ArchiveDao {
+        return database.archiveDao()
+    }
 }
+

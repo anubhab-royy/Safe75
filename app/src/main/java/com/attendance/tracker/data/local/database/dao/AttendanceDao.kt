@@ -71,4 +71,16 @@ interface AttendanceDao {
 
     @Query("SELECT COUNT(*) FROM attendance_records WHERE status = 'CANCELLED'")
     fun countCancelled(): Flow<Int>
+
+    /** Deletes ALL attendance records. Used during semester reset. */
+    @Query("DELETE FROM attendance_records")
+    suspend fun deleteAllAttendance(): Int
+
+    /** Returns all attendance records for backup serialization. */
+    @Query("SELECT * FROM attendance_records ORDER BY date DESC")
+    suspend fun getAllAttendance(): List<AttendanceEntity>
+
+    /** Inserts or replaces an attendance record. Used for restore operations. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAttendance(attendance: AttendanceEntity): Long
 }

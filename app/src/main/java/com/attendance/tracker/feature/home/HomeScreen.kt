@@ -43,7 +43,13 @@ fun HomeScreen(
     onNavigateToSimulator: () -> Unit,
     onNavigateToLeavePlanner: () -> Unit,
     onNavigateToNotificationSettings: () -> Unit,
-    onNavigateToOcr: () -> Unit
+    onNavigateToOcr: () -> Unit,
+    onNavigateToBackup: () -> Unit,
+    onNavigateToRestore: () -> Unit,
+    onNavigateToArchive: () -> Unit,
+    onNavigateToArchiveDetails: (Long) -> Unit,
+    onNavigateToSemesterReset: () -> Unit,
+    onNavigateToIntegrity: () -> Unit
 ) {
     val navController = rememberNavController()
 
@@ -107,19 +113,18 @@ fun HomeScreen(
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     onNavigateToNotificationSettings = onNavigateToNotificationSettings,
-                    onNavigateToOcr = onNavigateToOcr
+                    onNavigateToOcr = onNavigateToOcr,
+                    onNavigateToBackup = onNavigateToBackup,
+                    onNavigateToRestore = onNavigateToRestore,
+                    onNavigateToArchive = onNavigateToArchive,
+                    onNavigateToSemesterReset = onNavigateToSemesterReset,
+                    onNavigateToIntegrity = onNavigateToIntegrity
                 )
             }
 
-            // Future module placeholders (Phase 2 features ready to be wired up)
+            // Future module placeholder (Phase 2 feature ready to be wired up)
             composable(Screen.Planner.route) {
                 PlaceholderScreen(title = "Planner Screen")
-            }
-            composable(Screen.Semester.route) {
-                PlaceholderScreen(title = "Semester Screen")
-            }
-            composable(Screen.Backup.route) {
-                PlaceholderScreen(title = "Backup Screen")
             }
         }
     }

@@ -45,6 +45,18 @@ sealed class Screen(val route: String) {
 
     object NotificationSettings : Screen("notification_settings")
 
+    // Data Management & Semester Lifecycle (Phase 7)
+    object Restore : Screen("restore_dest")
+    object SemesterReset : Screen("semester_reset_dest")
+    object Archive : Screen("archive_dest")
+    object Integrity : Screen("integrity_dest")
+
+    object ArchiveDetails : Screen("archive_details?archiveId={archiveId}") {
+        fun createRoute(archiveId: Long): String {
+            return "archive_details?archiveId=$archiveId"
+        }
+    }
+
     // Future Module Placeholders (For scalability in Phase 2)
     object Ocr : Screen("ocr_dest")
     object Planner : Screen("planner_dest")

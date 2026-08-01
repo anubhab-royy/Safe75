@@ -54,4 +54,12 @@ interface SemesterDao {
         deactivateAllVersions()
         activateVersion(versionId)
     }
+
+    /** Inserts or replaces a semester version. Used for restore operations. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertVersion(version: SemesterVersionEntity): Long
+
+    /** Deletes ALL semester versions. Used during full reset. */
+    @Query("DELETE FROM semester_versions")
+    suspend fun deleteAllVersions(): Int
 }
