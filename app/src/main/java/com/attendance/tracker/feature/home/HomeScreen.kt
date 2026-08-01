@@ -39,7 +39,9 @@ import com.attendance.tracker.feature.subject.SubjectsScreen
 fun HomeScreen(
     onNavigateToAddEditSubject: (Long) -> Unit,
     onNavigateToAddEditSchedule: (Long) -> Unit,
-    onNavigateToAttendanceHistory: () -> Unit
+    onNavigateToAttendanceHistory: () -> Unit,
+    onNavigateToSimulator: () -> Unit,
+    onNavigateToLeavePlanner: () -> Unit
 ) {
     val navController = rememberNavController()
 
@@ -85,7 +87,9 @@ fun HomeScreen(
         ) {
             composable(Screen.Dashboard.route) {
                 DashboardScreen(
-                    onNavigateToAttendanceHistory = onNavigateToAttendanceHistory
+                    onNavigateToAttendanceHistory = onNavigateToAttendanceHistory,
+                    onNavigateToSimulator = onNavigateToSimulator,
+                    onNavigateToLeavePlanner = onNavigateToLeavePlanner
                 )
             }
             composable(Screen.Subjects.route) {

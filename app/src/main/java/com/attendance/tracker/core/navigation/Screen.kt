@@ -39,6 +39,10 @@ sealed class Screen(val route: String) {
         }
     }
 
+    object AttendanceSimulator : Screen("attendance_simulator")
+
+    object LeavePlanner : Screen("leave_planner")
+
     // Future Module Placeholders (For scalability in Phase 2)
     object Ocr : Screen("ocr_dest")
     object Planner : Screen("planner_dest")

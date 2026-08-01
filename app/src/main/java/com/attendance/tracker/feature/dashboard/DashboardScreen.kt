@@ -1,15 +1,16 @@
 package com.attendance.tracker.feature.dashboard
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,61 +19,58 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.attendance.tracker.core.model.AttendanceStatus
 import com.attendance.tracker.core.ui.components.AppTopBar
 import com.attendance.tracker.core.ui.components.EmptyState
 import com.attendance.tracker.core.ui.theme.Dimensions
-import com.attendance.tracker.domain.model.AttendanceStatistics
-import com.attendance.tracker.feature.attendance.AttendanceViewModel
+import com.attendance.tracker.domain.model.DashboardStatistics
+import com.attendance.tracker.domain.model.SubjectStatistics
 import com.attendance.tracker.feature.attendance.TodayScheduleItem
-import kotlinx.coroutines.launch
 import java.util.Locale
 
-/**
- * Redesigned Dashboard screen serving as the main landing screen showing overall metrics
- * and today's scheduled classes to log attendance in real-time.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     onNavigateToAttendanceHistory: () -> Unit,
-    viewModel: AttendanceViewModel = hiltViewModel()
+    onNavigateToSimulator: () -> Unit,
+    onNavigateToLeavePlanner: () -> Unit,
+    viewModel: DashboardViewModel = hiltViewModel()
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    val todayClasses by viewModel.todayClasses.collectAsState()
-    val overallStats by viewModel.overallStats.collectAsState()
+    val activeVersion by viewModel.activeVersion.collectAsState()
+    val filterScope by viewModel.filter.collectAsState()
+    val dashboardStats by viewModel.dashboardStats.collectAsState()
+    val subjectStatsList by viewModel.subjectStatsList.collectAsState()
+    val upcomingClass by viewModel.upcomingClass.collectAsState()
 
     Scaffold(
         topBar = {
             AppTopBar(
-                title = "Dashboard",
+                title = activeVersion?.let { "Dashboard (${it.name})" } ?: "Dashboard",
                 showBackButton = false
             )
         }
@@ -83,32 +81,65 @@ fun DashboardScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
         ) {
+            // Filter chip selector row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimensions.SpacingMedium, vertical = Dimensions.SpacingSmall),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)
+            ) {
+                DashboardFilter.values().forEach { filterVal ->
+                    FilterChip(
+                        selected = filterScope == filterVal,
+                        onClick = { viewModel.onFilterScopeChange(filterVal) },
+                        label = { Text(filterVal.name) }
+                    )
+                }
+            }
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(Dimensions.SpacingMedium),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = Dimensions.SpacingMedium,
+                    end = Dimensions.SpacingMedium,
+                    bottom = Dimensions.SpacingLarge
+                ),
                 verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
             ) {
-                // 1. Overall Statistics Panel
-                overallStats?.let { stats ->
+                // 1. Overall Statistics Card
+                dashboardStats?.let { stats ->
                     item {
-                        StatsOverviewCard(
-                            stats = stats,
-                            onHistoryClick = onNavigateToAttendanceHistory
-                        )
+                        OverallStatisticsCard(stats = stats)
                     }
                 }
 
-                // 2. Today's Scheduled Classes header
+                // 2. Quick Actions Card
+                item {
+                    QuickActionsCard(
+                        onHistoryClick = onNavigateToAttendanceHistory,
+                        onSimulatorClick = onNavigateToSimulator,
+                        onPlannerClick = onNavigateToLeavePlanner
+                    )
+                }
+
+                // 3. Upcoming Class Alert Card
+                upcomingClass?.let { item ->
+                    item {
+                        UpcomingClassCard(item = item)
+                    }
+                }
+
+                // 4. Section Header: Subjects
                 item {
                     Text(
-                        text = "Today's Scheduled Classes",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        text = "Subject-wise Analytics",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 }
 
-                // 3. Classes List
-                if (todayClasses.isEmpty()) {
+                // 5. Subject Summary cards list
+                if (subjectStatsList.isEmpty()) {
                     item {
                         Box(
                             modifier = Modifier
@@ -117,25 +148,14 @@ fun DashboardScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             EmptyState(
-                                message = "No classes scheduled today",
-                                description = "Enjoy your free day or configure schedules inside the Timetable tab."
+                                message = "No subjects logged yet",
+                                description = "Navigate to the Subjects tab to record your modules."
                             )
                         }
                     }
                 } else {
-                    items(todayClasses, key = { it.scheduleId }) { item ->
-                        TodayClassCard(
-                            item = item,
-                            onMark = { status ->
-                                coroutineScope.launch {
-                                    viewModel.markAttendance(
-                                        subjectId = item.subjectId,
-                                        scheduleId = item.scheduleId,
-                                        status = status
-                                    )
-                                }
-                            }
-                        )
+                    items(subjectStatsList, key = { it.subjectId }) { subjectStats ->
+                        SubjectStatisticsCard(stats = subjectStats)
                     }
                 }
             }
@@ -144,10 +164,13 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun StatsOverviewCard(
-    stats: AttendanceStatistics,
-    onHistoryClick: () -> Unit
-) {
+private fun OverallStatisticsCard(stats: DashboardStatistics) {
+    val statusColor = when (stats.safetyStatus) {
+        "SAFE" -> Color(0xFF2E7D32)      // Green
+        "WARNING" -> Color(0xFFFFA000)   // Amber
+        else -> Color(0xFFC62828)        // Red
+    }
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -172,74 +195,67 @@ private fun StatsOverviewCard(
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
                     Text(
-                        text = String.format(Locale.getDefault(), "%.1f%%", stats.attendancePercentage),
+                        text = String.format(Locale.getDefault(), "%.1f%%", stats.overallPercentage),
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold,
-                            fontSize = 36.sp
+                            fontSize = 38.sp
                         ),
-                        color = if (stats.attendancePercentage >= 75.0) {
-                            Color(0xFF2E7D32) // Green
-                        } else {
-                            Color(0xFFC62828) // Red
-                        }
+                        color = statusColor
                     )
                 }
-                OutlinedButton(
-                    onClick = onHistoryClick,
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+
+                // Safety Status Badge
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(statusColor.copy(alpha = 0.2f))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
-                    Text("History logs")
+                    Text(
+                        text = stats.safetyStatus,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = statusColor
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(Dimensions.SpacingMedium))
 
-            // Sub stats counts
+            // Sub counts metrics row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                StatItem(label = "Present", value = stats.presentCount.toString(), color = Color(0xFF2E7D32))
-                StatItem(label = "Absent", value = stats.absentCount.toString(), color = Color(0xFFC62828))
-                StatItem(label = "Cancelled", value = stats.cancelledCount.toString(), color = Color(0xFF757575))
-                StatItem(label = "Total", value = stats.totalClasses.toString(), color = MaterialTheme.colorScheme.onPrimaryContainer)
+                CountItem(label = "Present", value = stats.presentCount.toString(), color = Color(0xFF2E7D32))
+                CountItem(label = "Absent", value = stats.absentCount.toString(), color = Color(0xFFC62828))
+                CountItem(label = "Cancelled", value = stats.cancelledCount.toString(), color = Color(0xFF757575))
+                CountItem(label = "Total", value = stats.totalClasses.toString(), color = MaterialTheme.colorScheme.onPrimaryContainer)
             }
 
             Spacer(modifier = Modifier.height(Dimensions.SpacingSmall))
 
-            // Safe missed limits and targets warnings
+            // Intelligent recommendations bunk targets
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = Dimensions.SpacingSmall),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                    .padding(top = Dimensions.SpacingSmall)
             ) {
-                if (stats.remainingSafeClasses > 0) {
+                if (stats.safeMissCount > 0) {
                     Text(
-                        text = "✓ You can safely miss the next ${stats.remainingSafeClasses} classes",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        text = "You may safely miss the next ${stats.safeMissCount} classes",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color(0xFF2E7D32)
                     )
-                } else if (stats.attendancePercentage < 75.0) {
+                } else if (stats.classesNeeded > 0) {
                     Text(
-                        text = "⚠ Attendance is below 75% limit!",
+                        text = "Attend next ${stats.classesNeeded} classes to reach 85% goal",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color(0xFFC62828)
+                        color = Color(0xFFFFA000)
                     )
-                }
-
-                if (stats.classesNeededToReachGoal > 0) {
+                } else if (stats.classesNeeded == -1) {
                     Text(
-                        text = "➡ Need ${stats.classesNeededToReachGoal} consecutive present classes to reach 85% goal",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    )
-                } else if (stats.classesNeededToReachGoal == -1) {
-                    Text(
-                        text = "Goal of 85% or above is mathematically unreachable due to absences",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = "Goal is mathematically unreachable due to absences",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color(0xFFC62828)
                     )
                 }
@@ -249,14 +265,8 @@ private fun StatsOverviewCard(
 }
 
 @Composable
-private fun StatItem(
-    label: String,
-    value: String,
-    color: Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+private fun CountItem(label: String, value: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
@@ -271,125 +281,201 @@ private fun StatItem(
 }
 
 @Composable
-private fun TodayClassCard(
-    item: TodayScheduleItem,
-    onMark: (AttendanceStatus) -> Unit
+private fun QuickActionsCard(
+    onHistoryClick: () -> Unit,
+    onSimulatorClick: () -> Unit,
+    onPlannerClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimensions.SpacingMedium)
+        ) {
+            Text(
+                text = "Quick Actions",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+            Spacer(modifier = Modifier.height(Dimensions.SpacingSmall))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)
+            ) {
+                OutlinedButton(onClick = onHistoryClick, modifier = Modifier.weight(1f)) {
+                    Text("Logs History", fontSize = 11.sp)
+                }
+                OutlinedButton(onClick = onSimulatorClick, modifier = Modifier.weight(1f)) {
+                    Text("Simulator", fontSize = 11.sp)
+                }
+                OutlinedButton(onClick = onPlannerClick, modifier = Modifier.weight(1f)) {
+                    Text("Leave Planner", fontSize = 11.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpcomingClassCard(item: TodayScheduleItem) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimensions.SpacingMedium),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Upcoming Class",
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                Text(
+                    text = item.subjectName,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = "${item.startTime} - ${item.endTime} (Room: ${item.room ?: "N/A"})",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubjectStatisticsCard(stats: SubjectStatistics) {
+    val statusColor = when (stats.safetyStatus) {
+        "SAFE" -> Color(0xFF2E7D32)
+        "WARNING" -> Color(0xFFFFA000)
+        else -> Color(0xFFC62828)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Dimensions.SpacingMedium)
+            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)
         ) {
             // Subject color tag
             Box(
                 modifier = Modifier
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(Color(item.subjectColor))
-                    .align(Alignment.CenterVertically)
+                    .width(6.dp)
+                    .fillMaxHeight()
+                    .background(Color(stats.subjectColor))
             )
 
-            Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.subjectName,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "${item.startTime} - ${item.endTime}",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.primary
-                )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(Dimensions.SpacingMedium)
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    item.room?.let {
+                    Text(
+                        text = stats.subjectName,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    // Safety badge
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(statusColor.copy(alpha = 0.15f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
                         Text(
-                            text = "Room: $it",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
-                    }
-                    item.faculty?.let {
-                        Text(
-                            text = "Teacher: $it",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            text = stats.safetyStatus,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = statusColor
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(Dimensions.SpacingMedium))
+                Spacer(modifier = Modifier.height(4.dp))
 
-                // Attendance quick logs
-                if (item.attendance == null) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)
-                    ) {
-                        OutlinedButton(
-                            onClick = { onMark(AttendanceStatus.PRESENT) },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color(0xFF2E7D32)
-                            ),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Present", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
-                        }
-                        OutlinedButton(
-                            onClick = { onMark(AttendanceStatus.ABSENT) },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color(0xFFC62828)
-                            ),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Absent", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
-                        }
-                        OutlinedButton(
-                            onClick = { onMark(AttendanceStatus.CANCELLED) },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color(0xFF616161)
-                            ),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Cancel", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
-                        }
-                    }
-                } else {
-                    // Display status badge
-                    val badgeColor = when (item.attendance.status) {
-                        AttendanceStatus.PRESENT -> Color(0xFF2E7D32)
-                        AttendanceStatus.ABSENT -> Color(0xFFC62828)
-                        AttendanceStatus.CANCELLED -> Color(0xFF757575)
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = String.format(Locale.getDefault(), "%.1f%% (%d/%d classes)", stats.percentage, stats.presentCount, stats.totalClasses),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = statusColor
+                    )
+                    Text(
+                        text = "Goal: ${stats.personalGoalPercentage}% (Req: ${stats.requiredPercentage}%)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            tint = badgeColor,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Bunk guidance metrics
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    if (stats.safeMissCount > 0) {
                         Text(
-                            text = "Logged as: ${item.attendance.status.name}",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = badgeColor
-                            )
+                            text = "Bunks left: ${stats.safeMissCount}",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF2E7D32)
+                        )
+                    } else {
+                        Text(
+                            text = "Bunks left: 0",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF757575)
+                        )
+                    }
+
+                    if (stats.classesNeeded > 0) {
+                        Text(
+                            text = "Needed: ${stats.classesNeeded}",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFFFFA000)
+                        )
+                    } else if (stats.classesNeeded == -1) {
+                        Text(
+                            text = "Goal unreachable",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFC62828)
+                        )
+                    } else {
+                        Text(
+                            text = "Goal reached",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF2E7D32)
                         )
                     }
                 }

@@ -15,6 +15,8 @@ import com.attendance.tracker.feature.subject.AddEditSubjectScreen
 import com.attendance.tracker.feature.schedule.AddEditScheduleScreen
 import com.attendance.tracker.feature.attendance.AttendanceHistoryScreen
 import com.attendance.tracker.feature.attendance.AttendanceDetailsScreen
+import com.attendance.tracker.feature.planner.AttendanceSimulatorScreen
+import com.attendance.tracker.feature.planner.LeavePlannerScreen
 import com.attendance.tracker.feature.welcome.WelcomeScreen
 
 /**
@@ -66,6 +68,12 @@ fun AppNavHost(
                 },
                 onNavigateToAttendanceHistory = {
                     navController.navigate(Screen.AttendanceHistory.route)
+                },
+                onNavigateToSimulator = {
+                    navController.navigate(Screen.AttendanceSimulator.route)
+                },
+                onNavigateToLeavePlanner = {
+                    navController.navigate(Screen.LeavePlanner.route)
                 }
             )
         }
@@ -129,6 +137,22 @@ fun AppNavHost(
             val attendanceId = backStackEntry.arguments?.getLong("attendanceId") ?: 0L
             AttendanceDetailsScreen(
                 attendanceId = attendanceId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.AttendanceSimulator.route) {
+            AttendanceSimulatorScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.LeavePlanner.route) {
+            LeavePlannerScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }
