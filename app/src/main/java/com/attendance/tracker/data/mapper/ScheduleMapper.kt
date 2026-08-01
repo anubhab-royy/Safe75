@@ -5,15 +5,14 @@ import com.attendance.tracker.data.local.database.entity.ScheduleEntity
 import com.attendance.tracker.domain.model.Schedule
 import com.attendance.tracker.feature.schedule.model.ScheduleUiModel
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 /**
  * Mapper for converting Schedule data structures between Database, Domain, and UI layers.
  */
 object ScheduleMapper {
+    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-    /**
-     * Converts a database [ScheduleEntity] to a domain [Schedule].
-     */
     fun entityToDomain(entity: ScheduleEntity): Schedule {
         return Schedule(
             id = entity.id,
@@ -21,13 +20,14 @@ object ScheduleMapper {
             dayOfWeek = entity.dayOfWeek,
             startTime = entity.startTime,
             endTime = entity.endTime,
-            room = entity.room
+            room = entity.room,
+            teacherOverride = entity.teacherOverride,
+            versionId = entity.versionId,
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt
         )
     }
 
-    /**
-     * Converts a domain [Schedule] to a database [ScheduleEntity].
-     */
     fun domainToEntity(domain: Schedule): ScheduleEntity {
         return ScheduleEntity(
             id = domain.id,
@@ -35,35 +35,43 @@ object ScheduleMapper {
             dayOfWeek = domain.dayOfWeek,
             startTime = domain.startTime,
             endTime = domain.endTime,
-            room = domain.room
+            room = domain.room,
+            teacherOverride = domain.teacherOverride,
+            versionId = domain.versionId,
+            createdAt = domain.createdAt,
+            updatedAt = domain.updatedAt
         )
     }
 
-    /**
-     * Converts a domain [Schedule] to a [ScheduleUiModel].
-     */
-    fun domainToUi(domain: Schedule): ScheduleUiModel {
+    fun domainToUi(
+        domain: Schedule,
+        subjectName: String,
+        subjectColor: Int,
+        subjectFaculty: String?
+    ): ScheduleUiModel {
         return ScheduleUiModel(
             id = domain.id,
             subjectId = domain.subjectId,
+            subjectName = subjectName,
+            subjectColor = subjectColor,
             dayOfWeek = domain.dayOfWeek.name,
-            startTime = domain.startTime.toString(),
-            endTime = domain.endTime.toString(),
-            room = domain.room
+            startTime = domain.startTime.format(timeFormatter),
+            endTime = domain.endTime.format(timeFormatter),
+            room = domain.room,
+            faculty = domain.teacherOverride ?: subjectFaculty
         )
     }
 
-    /**
-     * Converts a [ScheduleUiModel] to a domain [Schedule].
-     */
-    fun uiToDomain(uiModel: ScheduleUiModel): Schedule {
+    fun uiToDomain(uiModel: ScheduleUiModel, versionId: Long): Schedule {
         return Schedule(
             id = uiModel.id,
             subjectId = uiModel.subjectId,
             dayOfWeek = WeekDay.valueOf(uiModel.dayOfWeek),
             startTime = LocalTime.parse(uiModel.startTime),
             endTime = LocalTime.parse(uiModel.endTime),
-            room = uiModel.room
+            room = uiModel.room,
+            teacherOverride = uiModel.faculty,
+            versionId = versionId
         )
     }
 }

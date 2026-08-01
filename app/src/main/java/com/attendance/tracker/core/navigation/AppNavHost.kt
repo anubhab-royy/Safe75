@@ -12,6 +12,7 @@ import androidx.navigation.navArgument
 import com.attendance.tracker.feature.home.HomeScreen
 import com.attendance.tracker.feature.splash.SplashScreen
 import com.attendance.tracker.feature.subject.AddEditSubjectScreen
+import com.attendance.tracker.feature.schedule.AddEditScheduleScreen
 import com.attendance.tracker.feature.welcome.WelcomeScreen
 
 /**
@@ -57,6 +58,9 @@ fun AppNavHost(
             HomeScreen(
                 onNavigateToAddEditSubject = { subjectId ->
                     navController.navigate(Screen.AddEditSubject.createRoute(subjectId))
+                },
+                onNavigateToAddEditSchedule = { scheduleId ->
+                    navController.navigate(Screen.AddEditSchedule.createRoute(scheduleId))
                 }
             )
         }
@@ -74,6 +78,24 @@ fun AppNavHost(
             val subjectId = backStackEntry.arguments?.getLong("subjectId") ?: -1L
             AddEditSubjectScreen(
                 subjectId = subjectId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = Screen.AddEditSchedule.route,
+            arguments = listOf(
+                navArgument("scheduleId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
+            )
+        ) { backStackEntry ->
+            val scheduleId = backStackEntry.arguments?.getLong("scheduleId") ?: -1L
+            AddEditScheduleScreen(
+                scheduleId = scheduleId,
                 onNavigateBack = {
                     navController.popBackStack()
                 }

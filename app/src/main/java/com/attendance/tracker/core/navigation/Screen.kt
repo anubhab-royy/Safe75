@@ -18,10 +18,16 @@ sealed class Screen(val route: String) {
     object Schedule : Screen("schedule_dest")
     object Settings : Screen("settings_dest")
 
-    // Subject Detail Screens (Taking over full screen - no bottom bar)
+    // Detail Screens (Taking over full screen - no bottom bar)
     object AddEditSubject : Screen("add_edit_subject?subjectId={subjectId}") {
         fun createRoute(subjectId: Long = -1L): String {
             return "add_edit_subject?subjectId=$subjectId"
+        }
+    }
+
+    object AddEditSchedule : Screen("add_edit_schedule?scheduleId={scheduleId}") {
+        fun createRoute(scheduleId: Long = -1L): String {
+            return "add_edit_schedule?scheduleId=$scheduleId"
         }
     }
 

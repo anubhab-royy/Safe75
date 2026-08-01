@@ -12,5 +12,9 @@ data class Schedule(
     val dayOfWeek: WeekDay,
     val startTime: LocalTime,
     val endTime: LocalTime,
-    val room: String? = null
+    val room: String? = null,
+    val teacherOverride: String? = null,
+    val versionId: Long,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
 )
