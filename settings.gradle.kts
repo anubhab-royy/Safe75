@@ -31,3 +31,4 @@ plugins {
 
 rootProject.name = "Attendance Tracker"
 include(":app")
+include(":benchmark")

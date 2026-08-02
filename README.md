@@ -9,6 +9,9 @@ Attendance Tracker is an offline-first Android application designed to help univ
 - **Timetable OCR Import:** Take a photo or screenshot of your weekly timetable to extract subjects, timings, and classrooms locally in seconds.
 - **Predictive Simulator:** Run simulations to see how skipping or attending future classes will affect your attendance percentages.
 - **Leave Planner:** Check the impact of planned leaves on your attendance targets before scheduling time off.
+- **Home-Screen Widget:** See your attendance percentage, today's progress, and the next class at a glance, with quick actions that deep-link into the app.
+- **Smart Reminders:** Morning schedule summary, post-class one-tap Present/Absent/Cancelled notifications, and an end-of-day nudge for unmarked classes.
+- **Full Data Control:** Export/restore JSON backups, archive finished semesters, reset for a new one, and run a data-integrity scan.
 - **M3 Design & Theming:** Custom color schemes that reflect attendance status (Safe, Warning, Critical) with support for Material You dynamic theming.
 - **100% Offline-First:** Operated with zero internet permissions, ensuring complete data ownership and local JSON backups.
 
@@ -35,6 +38,7 @@ graph TD
 
 - **Language:** Kotlin
 - **UI:** Jetpack Compose, Material 3, Material You
+- **Home Screen Widget:** Jetpack Glance
 - **DI:** Dagger Hilt
 - **Database:** Room
 - **Preferences:** Preferences DataStore
@@ -65,16 +69,35 @@ graph TD
    ```bash
    ./gradlew test
    ```
+4. Build the release APK (signing optional — see `docs/release/ReleaseChecklist.md`):
+   ```bash
+   ./gradlew assembleRelease
+   ```
+
+### Baseline Profile (optional)
+The `:benchmark` module can generate an ART baseline profile on a connected
+device/emulator:
+
+```bash
+./gradlew :benchmark:connectedCheck
+```
+
+Copy the generated profile to `app/src/main/baseline-prof.txt` and rebuild the
+release APK. A curated `baseline-prof.txt` is already committed for v1.0.0.
 
 ---
 
 ## Development Roadmap
 
-- **Phase 0:** Planning & Design (Complete)
-- **Phase 1:** Core Architecture (Complete)
-- **Phase 2:** Subject & Schedule Management (Next)
-- **Phase 3:** OCR Scanning & Predictive Simulators
-- **Phase 4:** Beta Testing & Production Release
+- **Phase 0 + 1:** Planning & Core Architecture (Complete)
+- **Phase 2:** Subject Management (Complete)
+- **Phase 3:** Timetable Management (Complete)
+- **Phase 4:** Attendance Tracking (Complete)
+- **Phase 5:** Attendance Intelligence (Complete)
+- **Phase 6:** Smart Productivity & Automation (Complete)
+- **Phase 7:** Data Management & Semester Lifecycle (Complete)
+- **Phase 8:** Production Release Readiness (Complete) — v1.0.0
+- **Post-1.0.0:** Baseline-profile device run, Play Store closed/open testing, broader QA
 
 ---
 

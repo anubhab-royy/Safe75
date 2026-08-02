@@ -6,13 +6,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.attendance.tracker.core.ui.theme.AttendanceTrackerTheme
 import com.attendance.tracker.core.navigation.AppNavHost
+import com.attendance.tracker.core.ui.theme.AttendanceTrackerTheme
+import com.attendance.tracker.core.widget.WidgetIntent
+import com.attendance.tracker.core.widget.WidgetUpdateWorker
+import com.attendance.tracker.core.worker.MissedAttendanceWorker
 import com.attendance.tracker.core.worker.MorningReminderWorker
 import com.attendance.tracker.core.worker.PostClassReminderWorker
-import com.attendance.tracker.core.worker.MissedAttendanceWorker
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
@@ -33,12 +37,15 @@ class MainActivity : ComponentActivity() {
             requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
         }
 
-        // Schedule background reminders
+        // Schedule background reminders and widget refreshes
         scheduleReminders()
+
+        // The home screen widget can launch the app straight into a destination.
+        val widgetDestination = intent.getStringExtra(WidgetIntent.EXTRA_DESTINATION)
 
         setContent {
             AttendanceTrackerTheme {
-                AppNavHost()
+                AppNavHost(startDestination = widgetDestination)
             }
         }
     }
@@ -92,6 +99,22 @@ class MainActivity : ComponentActivity() {
             "missed_reminder",
             ExistingPeriodicWorkPolicy.KEEP,
             missedRequest
+        )
+
+        // 4. Daily widget refresh (covers "every WorkManager sync")
+        val widgetRefreshRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(24, TimeUnit.HOURS)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            "widget_refresh_periodic",
+            ExistingPeriodicWorkPolicy.KEEP,
+            widgetRefreshRequest
+        )
+
+        // 5. Immediate widget refresh so the widget is fresh right after launch.
+        workManager.enqueueUniqueWork(
+            "widget_refresh_startup",
+            ExistingWorkPolicy.KEEP,
+            OneTimeWorkRequestBuilder<WidgetUpdateWorker>().build()
         )
     }
 }

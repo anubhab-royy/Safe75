@@ -2,6 +2,7 @@ package com.attendance.tracker.core.navigation
 
 import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -10,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.attendance.tracker.core.widget.WidgetIntent
 import com.attendance.tracker.feature.home.HomeScreen
 import com.attendance.tracker.feature.splash.SplashScreen
 import com.attendance.tracker.feature.subject.AddEditSubjectScreen
@@ -31,15 +33,24 @@ import com.attendance.tracker.feature.integrity.IntegrityScreen
 
 /**
  * Root Navigation Graph configuring Splash, Welcome, and transitions to Main content.
+ *
+ * @param startDestination Optional widget destination token (see
+ *   [WidgetIntent]). When provided the app skips the splash/onboarding flow and
+ *   launches directly into the requested screen (dashboard, attendance history,
+ *   schedule, or settings).
  */
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
+    startDestination: String? = null,
     navController: NavHostController = rememberNavController()
 ) {
+    val opensMainGraph = WidgetIntent.opensMainGraph(startDestination)
+    val initialRoute = if (opensMainGraph) Screen.MainGraph.route else Screen.RootGraph.route
+
     NavHost(
         navController = navController,
-        startDestination = Screen.RootGraph.route,
+        startDestination = initialRoute,
         modifier = modifier
     ) {
         // Root Graph: Handles splash/onboarding
@@ -70,6 +81,7 @@ fun AppNavHost(
         // Main Graph: Launches bottom navigation shell
         composable(route = Screen.MainGraph.route) {
             HomeScreen(
+                initialTabRoute = WidgetIntent.routeFor(startDestination),
                 onNavigateToAddEditSubject = { subjectId ->
                     navController.navigate(Screen.AddEditSubject.createRoute(subjectId))
                 },
@@ -279,6 +291,16 @@ fun AppNavHost(
             IntegrityScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+    }
+
+    // Direct-launch from the widget to a detail screen (e.g. attendance history).
+    val directDestination = startDestination?.takeIf { !opensMainGraph }?.let { WidgetIntent.routeFor(it) }
+    LaunchedEffect(directDestination) {
+        if (directDestination != null) {
+            navController.navigate(directDestination) {
+                launchSingleTop = true
+            }
         }
     }
 }

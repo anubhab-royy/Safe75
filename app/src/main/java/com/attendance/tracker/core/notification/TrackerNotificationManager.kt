@@ -25,6 +25,16 @@ object TrackerNotificationManager {
     const val NOTIFICATION_ID_MISSED = 1003
 
     /**
+     * Initializes notification channels off the main thread so application
+     * startup stays fast. Channel creation is a one-time binder call.
+     */
+    fun createNotificationChannelsAsync(context: Context) {
+        Thread {
+            createNotificationChannels(context)
+        }.start()
+    }
+
+    /**
      * Initializes notification channels inside application startup.
      */
     fun createNotificationChannels(context: Context) {

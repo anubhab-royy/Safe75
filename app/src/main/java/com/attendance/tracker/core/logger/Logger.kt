@@ -1,5 +1,8 @@
 package com.attendance.tracker.core.logger
 
+import android.util.Log
+import com.attendance.tracker.BuildConfig
+
 /**
  * Interface defining standard logging operations.
  */
@@ -12,9 +15,12 @@ interface LogEngine {
 
 /**
  * Core application logger delegating to a configurable [LogEngine].
+ *
+ * In release builds logging is a no-op so no PII or debug output leaks into
+ * production (see Quality: no debug logging in Release).
  */
 object Logger {
-    private var engine: LogEngine = DefaultLogEngine()
+    private var engine: LogEngine = createDefaultEngine()
 
     /**
      * Replaces the current logging engine.
@@ -27,6 +33,9 @@ object Logger {
     fun i(tag: String, message: String, throwable: Throwable? = null) = engine.i(tag, message, throwable)
     fun w(tag: String, message: String, throwable: Throwable? = null) = engine.w(tag, message, throwable)
     fun e(tag: String, message: String, throwable: Throwable? = null) = engine.e(tag, message, throwable)
+
+    private fun createDefaultEngine(): LogEngine =
+        if (BuildConfig.DEBUG) DefaultLogEngine() else NoOpLogEngine()
 }
 
 /**
@@ -34,15 +43,25 @@ object Logger {
  */
 class DefaultLogEngine : LogEngine {
     override fun d(tag: String, message: String, throwable: Throwable?) {
-        android.util.Log.d(tag, message, throwable)
+        Log.d(tag, message, throwable)
     }
     override fun i(tag: String, message: String, throwable: Throwable?) {
-        android.util.Log.i(tag, message, throwable)
+        Log.i(tag, message, throwable)
     }
     override fun w(tag: String, message: String, throwable: Throwable?) {
-        android.util.Log.w(tag, message, throwable)
+        Log.w(tag, message, throwable)
     }
     override fun e(tag: String, message: String, throwable: Throwable?) {
-        android.util.Log.e(tag, message, throwable)
+        Log.e(tag, message, throwable)
     }
+}
+
+/**
+ * Discards every log call; used in release builds.
+ */
+class NoOpLogEngine : LogEngine {
+    override fun d(tag: String, message: String, throwable: Throwable?) = Unit
+    override fun i(tag: String, message: String, throwable: Throwable?) = Unit
+    override fun w(tag: String, message: String, throwable: Throwable?) = Unit
+    override fun e(tag: String, message: String, throwable: Throwable?) = Unit
 }

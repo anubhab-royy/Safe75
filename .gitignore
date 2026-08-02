@@ -1,15 +1,37 @@
-*.iml
-.gradle
+# Gradle
+.gradle/
+**/build/
+
+# Local configuration
+local.properties
 /local.properties
+
+# IDE
+.idea/
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
-.DS_Store
-/build
+*.iml
+
+# Native build
+.cxx/
+.externalNativeBuild/
+
+# Captures
+captures/
 /captures
-.externalNativeBuild
-.cxx
-local.properties
+
+# Kotlin
+.kotlin/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# Legacy root build rule (kept for compatibility)
+/build

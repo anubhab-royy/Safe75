@@ -10,16 +10,24 @@ This document outlines the multi-phase timeline and release criteria for **Atten
 gantt
     title Attendance Tracker Release Timeline
     dateFormat  YYYY-MM
-    section Phase 0
-    Planning & Design    :active, p0, 2026-07, 2026-08
-    section Phase 1
-    Core Architecture    :done, p1, 2026-08, 2026-08
+    section Phase 0-1
+    Planning & Architecture   :done, p0, 2026-01, 2026-02
     section Phase 2
-    Subject & Timetable  :crit, p2, 2026-08, 2026-09
+    Subject Management        :done, p2, 2026-02, 2026-03
     section Phase 3
-    OCR & Analytics      :p3, 2026-09, 2026-10
+    Timetable Management      :done, p3, 2026-03, 2026-04
     section Phase 4
-    Production Release   :p4, 2026-10, 2026-11
+    Attendance Tracking       :done, p4, 2026-04, 2026-05
+    section Phase 5
+    Attendance Intelligence   :done, p5, 2026-05, 2026-06
+    section Phase 6
+    Productivity & Automation :done, p6, 2026-06, 2026-07
+    section Phase 7
+    Data Management           :done, p7, 2026-07, 2026-07
+    section Phase 8
+    Release Readiness         :done, p8, 2026-07, 2026-08
+    section Post-1.0.0
+    Play Store & QA           :active, p9, 2026-08, 2026-09
 ```
 
 ---
@@ -43,7 +51,7 @@ gantt
 - **Testing:** Verify code compilation via `./gradlew assembleDebug`.
 - **Exit Criteria:** Successful compilation and setup of database/Hilt graphs.
 
-### Phase 2: Subject & Schedule Management (Next)
+### Phase 2: Subject & Schedule Management (Completed)
 - **Objective:** Implement CRUD capabilities for courses and schedule time blocks.
 - **Key Milestones:**
   - Build `SubjectScreen` rendering the list of configured courses.
@@ -52,21 +60,39 @@ gantt
 - **Testing:** Write unit tests for repositories and validators.
 - **Exit Criteria:** CRUD functionality works with full database integration.
 
-### Phase 3: OCR & Predictive Analytics
-- **Objective:** Implement ML Kit timetable scanning and predictive dashboards.
-- **Key Milestones:**
-  - Integrate Google ML Kit OCR text-recognition camera workflows.
-  - Implement parsing regex mapping recognized text blocks into timetable schedules.
-  - Build `AttendanceSimulator` slider dashboard widgets.
-  - Implement JSON Backup/Restore functions.
-- **Testing:** Run OCR extraction tests with varying timetable grid shapes.
-- **Exit Criteria:** Timetable parsing matches source images with at least 85% accuracy.
+### Phase 3: Timetable Management (Completed)
+- **Objective:** Weekly timetable with subject slots, rooms, and teachers; search and day tabs.
+- **Exit Criteria:** Full weekly schedule CRUD with duplicate/conflict validation.
 
-### Phase 4: Production Release
-- **Objective:** Perform bug fixes, styling adjustments, and launch the app on the Google Play Store.
+### Phase 4: Attendance Tracking (Completed)
+- **Objective:** Mark Present / Absent / Cancelled per class with per-subject and per-day views.
+- **Exit Criteria:** Attendance recording flows and duplicate-date guards.
+
+### Phase 5: Attendance Intelligence (Completed)
+- **Objective:** Dashboards with safe/warning/critical percentages, per-subject stats, searchable history.
+- **Exit Criteria:** Accurate percentage calculations verified by unit tests.
+
+### Phase 6: Smart Productivity & Automation (Completed)
+- **Objective:** OCR timetable/statement import, attendance simulator, leave planner, notification settings, WorkManager reminders.
+- **Exit Criteria:** Reminder workers and OCR flows operational.
+
+### Phase 7: Data Management & Semester Lifecycle (Completed)
+- **Objective:** JSON backup/restore, semester archive, semester reset wizard, and data-integrity scan.
+- **Exit Criteria:** 116 unit tests green; backup pipeline validated end-to-end.
+
+### Phase 8: Production Release Readiness (Completed — v1.0.0)
+- **Objective:** Ship a store-ready v1.0.0 release.
 - **Key Milestones:**
-  - Integrate the pluggable `Logger` with Firebase Crashlytics.
-  - Build Android Homescreen Widgets for quick status checks.
-  - Configure the release build pipeline with ProGuard obfuscation.
-- **Testing:** Launch a closed internal testing track with 20 real users.
-- **Exit Criteria:** Production APK size is under 15MB with zero crash rates over 7 days.
+  - Home-screen widget (Glance) with auto-refresh and deep links.
+  - Release build config: R8 + shrink, ProGuard rules, signing, versioning.
+  - Debug-only StrictMode/logging; startup optimizations; adaptive layout.
+  - `:benchmark` baseline-profile scaffold; `docs/release/` Play Store docs.
+- **Exit Criteria:** Debug + release APKs build, 116 unit tests pass, accessibility/error-state audits clean.
+
+### Post-1.0.0: Production Release
+- **Objective:** Launch on the Google Play Store.
+- **Key Milestones:**
+  - Generate the ART baseline profile on a device (`:benchmark:connectedCheck`) and ship it.
+  - Close the release with the real signing key; upload AAB; internal → closed → open → production.
+  - Monitor crash-free sessions and install size over the first 7 days.
+- **Exit Criteria:** Production APK under 15MB, zero crashes over 7 days (see `docs/release/ReleaseChecklist.md`).

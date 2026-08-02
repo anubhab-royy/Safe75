@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Attendance Tracker</string>
+    <string name="widget_description">Today\'s attendance, overall percentage, next class, and quick actions.</string>
+    <string name="widget_label">Attendance Tracker</string>
 </resources>

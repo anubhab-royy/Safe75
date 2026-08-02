@@ -1,0 +1,2 @@
+Lcom/attendance/tracker/MainApplication;
+Lcom/attendance/tracker/MainActivity;

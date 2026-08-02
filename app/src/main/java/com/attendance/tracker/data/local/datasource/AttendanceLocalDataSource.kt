@@ -1,7 +1,10 @@
 package com.attendance.tracker.data.local.datasource
 
+import android.content.Context
+import com.attendance.tracker.core.widget.WidgetRefreshScheduler
 import com.attendance.tracker.data.local.database.dao.AttendanceDao
 import com.attendance.tracker.data.local.database.entity.AttendanceEntity
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import javax.inject.Inject
@@ -44,8 +47,12 @@ interface AttendanceLocalDataSource {
 
 /**
  * Local Data Source implementation delegating directly to [AttendanceDao].
+ *
+ * Every successful mutation schedules a home screen widget refresh so the
+ * widget reflects the latest attendance state (see WidgetSyncWorker).
  */
 class AttendanceLocalDataSourceImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val attendanceDao: AttendanceDao
 ) : AttendanceLocalDataSource {
 
@@ -78,15 +85,21 @@ class AttendanceLocalDataSourceImpl @Inject constructor(
     }
 
     override suspend fun insertAttendance(attendance: AttendanceEntity): Long {
-        return attendanceDao.insert(attendance)
+        val id = attendanceDao.insert(attendance)
+        if (id > 0) refreshWidget()
+        return id
     }
 
     override suspend fun updateAttendance(attendance: AttendanceEntity): Int {
-        return attendanceDao.update(attendance)
+        val updated = attendanceDao.update(attendance)
+        if (updated > 0) refreshWidget()
+        return updated
     }
 
     override suspend fun deleteAttendance(attendance: AttendanceEntity): Int {
-        return attendanceDao.delete(attendance)
+        val deleted = attendanceDao.delete(attendance)
+        if (deleted > 0) refreshWidget()
+        return deleted
     }
 
     override suspend fun checkDuplicateAttendance(subjectId: Long, scheduleId: Long, date: LocalDate): Boolean {
@@ -107,5 +120,9 @@ class AttendanceLocalDataSourceImpl @Inject constructor(
 
     override fun searchAttendance(query: String): Flow<List<AttendanceEntity>> {
         return attendanceDao.searchAttendance(query)
+    }
+
+    private fun refreshWidget() {
+        WidgetRefreshScheduler.schedule(context)
     }
 }
