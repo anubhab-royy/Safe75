@@ -10,6 +10,10 @@ import com.attendance.tracker.domain.usecase.subject.ObserveSubjectsUseCase
 import com.attendance.tracker.domain.usecase.subject.UpdateSubjectUseCase
 import com.attendance.tracker.domain.validation.SubjectValidator
 import com.attendance.tracker.domain.validation.ValidationResult
+import com.attendance.tracker.domain.usecase.planner.LocalFakeAttendanceRepository
+import com.attendance.tracker.domain.usecase.attendance.CalculateAttendanceStatisticsUseCase
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -32,12 +36,16 @@ class SubjectViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var repository: FakeSubjectRepository
+    private lateinit var attendanceRepo: LocalFakeAttendanceRepository
+    private lateinit var settingsRepo: FakeSettingsRepository
     private lateinit var viewModel: SubjectViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeSubjectRepository()
+        attendanceRepo = LocalFakeAttendanceRepository()
+        settingsRepo = FakeSettingsRepository()
 
         val observeUseCase = ObserveSubjectsUseCase(repository)
         val addUseCase = AddSubjectUseCase(repository)
@@ -54,7 +62,10 @@ class SubjectViewModelTest {
             deleteSubjectUseCase = deleteUseCase,
             getSubjectUseCase = getSubjectUseCase,
             getSubjectsUseCase = getSubjectsUseCase,
-            validator = validator
+            validator = validator,
+            attendanceRepository = attendanceRepo,
+            settingsRepository = settingsRepo,
+            calculateStatisticsUseCase = CalculateAttendanceStatisticsUseCase()
         )
     }
 
@@ -151,4 +162,22 @@ class SubjectViewModelTest {
 
         assertTrue(repository.subjects.isEmpty())
     }
+}
+
+class FakeSettingsRepository : com.attendance.tracker.domain.repository.SettingsRepository {
+    private val _target = MutableStateFlow(com.attendance.tracker.core.model.AttendanceTarget(75.0, 75.0))
+    override fun getThemeMode(): Flow<String> = kotlinx.coroutines.flow.emptyFlow()
+    override suspend fun setThemeMode(themeMode: String) {}
+    override fun isNotificationsEnabled(): Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
+    override suspend fun setNotificationsEnabled(enabled: Boolean) {}
+    override fun getLastBackupTimestamp(): Flow<Long> = kotlinx.coroutines.flow.emptyFlow()
+    override suspend fun setLastBackupTimestamp(timestamp: Long) {}
+    override fun getAttendanceTarget(): Flow<com.attendance.tracker.core.model.AttendanceTarget> = _target
+    override suspend fun updateAttendanceTarget(target: com.attendance.tracker.core.model.AttendanceTarget) { _target.value = target }
+    override fun isMorningReminderEnabled(): Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
+    override suspend fun setMorningReminderEnabled(enabled: Boolean) {}
+    override fun isAttendanceReminderEnabled(): Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
+    override suspend fun setAttendanceReminderEnabled(enabled: Boolean) {}
+    override fun isMissedReminderEnabled(): Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
+    override suspend fun setMissedReminderEnabled(enabled: Boolean) {}
 }

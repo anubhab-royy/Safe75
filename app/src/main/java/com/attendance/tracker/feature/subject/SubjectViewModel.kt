@@ -15,6 +15,10 @@ import com.attendance.tracker.domain.usecase.subject.UpdateSubjectUseCase
 import com.attendance.tracker.domain.validation.SubjectValidator
 import com.attendance.tracker.domain.validation.ValidationResult
 import com.attendance.tracker.feature.subject.model.SubjectUiModel
+import com.attendance.tracker.feature.subject.model.SubjectWithStats
+import com.attendance.tracker.domain.repository.AttendanceRepository
+import com.attendance.tracker.domain.repository.SettingsRepository
+import com.attendance.tracker.domain.usecase.attendance.CalculateAttendanceStatisticsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,7 +48,10 @@ class SubjectViewModel @Inject constructor(
     private val deleteSubjectUseCase: DeleteSubjectUseCase,
     private val getSubjectUseCase: GetSubjectUseCase,
     private val getSubjectsUseCase: GetSubjectsUseCase,
-    private val validator: SubjectValidator
+    private val validator: SubjectValidator,
+    private val attendanceRepository: AttendanceRepository,
+    private val settingsRepository: SettingsRepository,
+    private val calculateStatisticsUseCase: CalculateAttendanceStatisticsUseCase
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
@@ -53,8 +60,8 @@ class SubjectViewModel @Inject constructor(
     private val _sortOption = MutableStateFlow(SubjectSortOption.ALPHABETICAL)
     val sortOption: StateFlow<SubjectSortOption> = _sortOption.asStateFlow()
 
-    private val _subjectsState = MutableStateFlow<UiState<List<SubjectUiModel>>>(UiState.Loading)
-    val subjectsState: StateFlow<UiState<List<SubjectUiModel>>> = _subjectsState.asStateFlow()
+    private val _subjectsState = MutableStateFlow<UiState<List<SubjectWithStats>>>(UiState.Loading)
+    val subjectsState: StateFlow<UiState<List<SubjectWithStats>>> = _subjectsState.asStateFlow()
 
     private val _validationState = MutableStateFlow<ValidationResult>(ValidationResult.Valid)
     val validationState: StateFlow<ValidationResult> = _validationState.asStateFlow()
@@ -68,9 +75,11 @@ class SubjectViewModel @Inject constructor(
             _subjectsState.value = UiState.Loading
             combine(
                 observeSubjectsUseCase(),
+                attendanceRepository.observeAttendanceHistory(),
+                settingsRepository.getAttendanceTarget(),
                 _searchQuery,
                 _sortOption
-            ) { rawSubjects, query, sort ->
+            ) { rawSubjects, history, target, query, sort ->
                 val filtered = if (query.isBlank()) {
                     rawSubjects
                 } else {
@@ -86,7 +95,34 @@ class SubjectViewModel @Inject constructor(
                     SubjectSortOption.ATTENDANCE_GOAL -> filtered.sortedByDescending { it.personalAttendanceGoal }
                 }
 
-                sorted.map { SubjectMapper.domainToUi(it) }
+                sorted.map { subject ->
+                    val subjectHistory = history.filter { it.subjectId == subject.id }
+                    val stats = calculateStatisticsUseCase(
+                        subjectHistory,
+                        subject.requiredAttendancePercentage,
+                        subject.personalAttendanceGoal
+                    )
+                    val status = when {
+                        stats.attendancePercentage < subject.personalAttendanceGoal -> "CRITICAL"
+                        stats.remainingSafeClasses == 0 -> "WARNING"
+                        else -> "GOOD"
+                    }
+                    SubjectWithStats(
+                        id = subject.id,
+                        name = subject.name,
+                        faculty = subject.facultyName,
+                        requiredAttendance = subject.requiredAttendancePercentage,
+                        attendanceGoal = subject.personalAttendanceGoal,
+                        color = subject.color,
+                        presentCount = stats.presentCount,
+                        totalClasses = stats.totalClasses,
+                        percentage = stats.attendancePercentage,
+                        safeMissCount = stats.remainingSafeClasses,
+                        classesNeeded = stats.classesNeededToReachGoal,
+                        safetyStatus = status,
+                        trend = "●"
+                    )
+                }
             }
                 .catch { e ->
                     _subjectsState.value = UiState.Error(

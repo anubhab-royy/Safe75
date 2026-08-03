@@ -73,6 +73,7 @@ fun HomeScreen(
         val useRail = maxWidth >= 840.dp
 
         Scaffold(
+            contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
             bottomBar = {
                 if (!useRail) {
                     NavigationBar {

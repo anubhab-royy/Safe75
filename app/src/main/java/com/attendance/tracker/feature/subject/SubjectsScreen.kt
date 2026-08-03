@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.attendance.tracker.core.common.UiState
@@ -55,6 +56,10 @@ import com.attendance.tracker.core.ui.components.EmptyState
 import com.attendance.tracker.core.ui.components.LoadingIndicator
 import com.attendance.tracker.core.ui.theme.Dimensions
 import com.attendance.tracker.feature.subject.model.SubjectUiModel
+import com.attendance.tracker.feature.subject.model.SubjectWithStats
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.foundation.shape.RoundedCornerShape
+import java.util.Locale
 
 /**
  * Screen displaying the list of all study subjects.
@@ -70,7 +75,7 @@ fun SubjectsScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val sortOption by viewModel.sortOption.collectAsState()
 
-    var subjectToDelete by remember { mutableStateOf<SubjectUiModel?>(null) }
+    var subjectToDelete by remember { mutableStateOf<SubjectWithStats?>(null) }
     var showSortMenu by remember { mutableStateOf(false) }
 
     // Render Delete Confirmation Dialog if triggered
@@ -244,63 +249,236 @@ fun SubjectsScreen(
 
 @Composable
 private fun SubjectCardItem(
-    subject: SubjectUiModel,
+    subject: SubjectWithStats,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Row(
+    val statusColor = when (subject.safetyStatus.uppercase(Locale.ROOT)) {
+        "GOOD" -> Color(0xFF2E7D32)
+        "WARNING" -> Color(0xFFFFA000)
+        else -> Color(0xFFC62828)
+    }
+
+    if (subject.totalClasses == 0) {
+        // Empty Attendance State: grey border/placeholder without percentage and progress bar
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimensions.SpacingMedium),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Predefined Color Indicator Circle
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(Color(subject.color))
+                .clickable { onClick() },
+            shape = MaterialTheme.shapes.large,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            ),
+            border = androidx.compose.foundation.BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
             )
-
-            Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
-
-            Column(
-                modifier = Modifier.weight(1f)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Dimensions.SpacingMedium),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = subject.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                // Predefined Color Indicator Circle (smaller/secondary)
+                Box(
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clip(CircleShape)
+                        .background(Color(subject.color))
                 )
-                subject.faculty?.let {
+
+                Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        text = subject.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    subject.faculty?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "No attendance logged yet",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = "Delete Subject",
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
-                Text(
-                    text = "Goal: ${subject.attendanceGoal}% (Req: ${subject.requiredAttendance}%)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
             }
+        }
+    } else {
+        // With attendance data card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() },
+            shape = MaterialTheme.shapes.large,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Dimensions.SpacingMedium)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Predefined Color Indicator Circle
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(Color(subject.color))
+                    )
 
-            IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = "Delete Subject",
-                    tint = MaterialTheme.colorScheme.error
+                    Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = subject.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        subject.faculty?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+
+                    // Trend Indicator placeholder (Reusable UI element)
+                    val trendColor = when (subject.trend) {
+                        "▲" -> Color(0xFF2E7D32)
+                        "▼" -> Color(0xFFC62828)
+                        else -> Color(0xFF757575)
+                    }
+                    val trendLabel = when (subject.trend) {
+                        "▲" -> "▲ Improving"
+                        "▼" -> "▼ Dropping"
+                        else -> "● Stable"
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(trendColor.copy(alpha = 0.1f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = trendLabel,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = trendColor
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Outlined.Delete,
+                            contentDescription = "Delete Subject",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Percentage and Goal
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = String.format(Locale.getDefault(), "%.1f%%", subject.percentage),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                        color = statusColor
+                    )
+                    Text(
+                        text = "Goal: ${subject.attendanceGoal}%",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                LinearProgressIndicator(
+                    progress = (subject.percentage / 100.0).toFloat(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = statusColor,
+                    trackColor = statusColor.copy(alpha = 0.2f)
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Bunks left and Recovery message
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val bunkText = if (subject.safeMissCount > 0) {
+                        "Bunks Left: ${subject.safeMissCount}"
+                    } else {
+                        "Bunks Left: 0"
+                    }
+                    Text(
+                        text = bunkText,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = if (subject.safeMissCount > 0) Color(0xFF2E7D32) else Color(0xFFC62828)
+                    )
+
+                    val recoveryText = if (subject.classesNeeded > 0) {
+                        "Need: ${subject.classesNeeded}"
+                    } else if (subject.classesNeeded == -1) {
+                        "Goal unreachable"
+                    } else {
+                        "Goal reached"
+                    }
+                    Text(
+                        text = recoveryText,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                        color = if (subject.classesNeeded > 0) Color(0xFFFFA000) else if (subject.classesNeeded == -1) Color(0xFFC62828) else Color(0xFF2E7D32)
+                    )
+                }
             }
         }
     }

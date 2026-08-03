@@ -127,9 +127,9 @@ class DashboardViewModel @Inject constructor(
             java.time.DayOfWeek.SUNDAY -> WeekDay.Sunday
         }
 
+        val nowTime = java.time.LocalTime.now()
         schedules.values
             .filter { it.dayOfWeek == dayEnum }
-            .sortedBy { it.startTime }
             .map { schedule ->
                 val subject = subjects[schedule.subjectId]
                 val attendance = todayAttendance.find { it.scheduleId == schedule.id }
@@ -146,6 +146,16 @@ class DashboardViewModel @Inject constructor(
                     attendance = attendance
                 )
             }
+            .sortedWith(compareBy<TodayScheduleItem> { item ->
+                val sched = schedules[item.scheduleId] ?: return@compareBy 3
+                val isMarked = item.attendance != null
+                val isCurrent = !isMarked && nowTime >= sched.startTime && nowTime <= sched.endTime
+                val isUpcoming = !isMarked && nowTime < sched.startTime
+                if (isCurrent) 1 else if (isUpcoming) 2 else 3
+            }.thenBy { item ->
+                val sched = schedules[item.scheduleId]
+                sched?.startTime ?: java.time.LocalTime.MIDNIGHT
+            })
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
