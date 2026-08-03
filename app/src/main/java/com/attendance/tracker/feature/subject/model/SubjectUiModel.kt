@@ -28,5 +28,6 @@ data class SubjectWithStats(
     val safeMissCount: Int = 0,
     val classesNeeded: Int = 0,
     val safetyStatus: String = "GOOD", // "GOOD", "WARNING", "CRITICAL"
+    val hasSchedules: Boolean = false,
     val trend: String = "●" // "▲" (Improving), "▼" (Dropping), "●" (Stable)
 )

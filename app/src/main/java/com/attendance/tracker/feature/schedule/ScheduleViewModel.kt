@@ -8,14 +8,17 @@ import com.attendance.tracker.core.model.WeekDay
 import com.attendance.tracker.data.mapper.ScheduleMapper
 import com.attendance.tracker.domain.model.Schedule
 import com.attendance.tracker.domain.model.SemesterVersion
+import com.attendance.tracker.domain.repository.AttendanceRepository
 import com.attendance.tracker.domain.repository.ScheduleRepository
 import com.attendance.tracker.domain.repository.SemesterRepository
 import com.attendance.tracker.domain.repository.SubjectRepository
+import com.attendance.tracker.domain.usecase.attendance.DetectMissingAttendanceUseCase
 import com.attendance.tracker.domain.usecase.schedule.AddScheduleUseCase
 import com.attendance.tracker.domain.usecase.schedule.DeleteScheduleUseCase
 import com.attendance.tracker.domain.usecase.schedule.DetectConflictUseCase
 import com.attendance.tracker.domain.usecase.schedule.GetWeekScheduleUseCase
 import com.attendance.tracker.domain.usecase.schedule.ObserveScheduleUseCase
+import com.attendance.tracker.domain.usecase.schedule.SaveMultiDayScheduleUseCase
 import com.attendance.tracker.domain.usecase.schedule.SwitchTimetableVersionUseCase
 import com.attendance.tracker.domain.usecase.schedule.UpdateScheduleUseCase
 import com.attendance.tracker.domain.validation.ScheduleValidator
@@ -28,10 +31,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
+
+/**
+ * Encapsulates a suggested backfill action surfaced after saving a schedule.
+ */
+data class BackfillPrompt(
+    val subjectId: Long,
+    val subjectName: String,
+    val missingCount: Int
+)
 
 /**
  * ViewModel managing the active weekly schedules, conflicts, and timetable version configurations.
@@ -43,11 +57,14 @@ class ScheduleViewModel @Inject constructor(
     private val addScheduleUseCase: AddScheduleUseCase,
     private val updateScheduleUseCase: UpdateScheduleUseCase,
     private val deleteScheduleUseCase: DeleteScheduleUseCase,
+    private val saveMultiDayScheduleUseCase: SaveMultiDayScheduleUseCase,
     private val detectConflictUseCase: DetectConflictUseCase,
     private val switchTimetableVersionUseCase: SwitchTimetableVersionUseCase,
     private val semesterRepository: SemesterRepository,
     private val subjectRepository: SubjectRepository,
     private val scheduleRepository: ScheduleRepository,
+    private val attendanceRepository: AttendanceRepository,
+    private val detectMissingAttendanceUseCase: DetectMissingAttendanceUseCase,
     private val validator: ScheduleValidator
 ) : ViewModel() {
 
@@ -68,6 +85,9 @@ class ScheduleViewModel @Inject constructor(
 
     private val _conflicts = MutableStateFlow<List<Schedule>>(emptyList())
     val conflicts = _conflicts.asStateFlow()
+
+    private val _pendingBackfillPrompt = MutableStateFlow<BackfillPrompt?>(null)
+    val pendingBackfillPrompt = _pendingBackfillPrompt.asStateFlow()
 
     private val _subjects = MutableStateFlow<List<com.attendance.tracker.domain.model.Subject>>(emptyList())
     val subjects = _subjects.asStateFlow()
@@ -217,6 +237,130 @@ class ScheduleViewModel @Inject constructor(
             true
         } catch (e: Exception) {
             false
+        }
+    }
+
+    /**
+     * Saves a class slot that may span multiple weekdays.
+     * One schedule record is persisted per selected day via
+     * [SaveMultiDayScheduleUseCase]. Afterwards the semester history is checked
+     * for classes with missing attendance and, if any are found, a backfill
+     * prompt is surfaced through [pendingBackfillPrompt].
+     */
+    suspend fun saveScheduleMultiDay(
+        id: Long = 0L,
+        subjectId: Long,
+        days: Set<WeekDay>,
+        startTime: LocalTime,
+        endTime: LocalTime,
+        room: String?,
+        teacher: String?
+    ): Boolean {
+        clearValidationError()
+        val version = _activeVersion.value ?: return false
+        val selectedDays = days.toSet()
+        if (selectedDays.isEmpty()) {
+            _validationState.value = ValidationResult.Invalid("Select at least one day of the week")
+            return false
+        }
+
+        val allSchedules = getWeekScheduleUseCase(version.id)
+        val groupMembers = if (id == 0L) {
+            emptyList()
+        } else {
+            allSchedules.filter {
+                it.id != id && it.subjectId == subjectId &&
+                        it.startTime == startTime && it.endTime == endTime
+            }
+        }
+        val excludedIds = groupMembers.map { it.id }.toSet() + id
+
+        // Conflict check per day, ignoring the slot group being edited.
+        for (day in selectedDays) {
+            val overlapping = detectConflictUseCase(version.id, day, startTime, endTime, id)
+                .filter { it.id !in excludedIds }
+            if (overlapping.isNotEmpty()) {
+                _conflicts.value = overlapping
+                _validationState.value = ValidationResult.Invalid("Timing overlap conflict detected")
+                return false
+            }
+        }
+
+        // Validation per day, ignoring the slot group being edited.
+        val existingExcludingGroup = allSchedules.filter { it.id !in excludedIds }
+        for (day in selectedDays) {
+            val schedule = Schedule(
+                id = id,
+                subjectId = subjectId,
+                dayOfWeek = day,
+                startTime = startTime,
+                endTime = endTime,
+                room = room?.trim()?.takeIf { it.isNotBlank() },
+                teacherOverride = teacher?.trim()?.takeIf { it.isNotBlank() },
+                versionId = version.id,
+                updatedAt = System.currentTimeMillis()
+            )
+            val validationResult = validator.validate(schedule, existingExcludingGroup)
+            if (validationResult is ValidationResult.Invalid) {
+                _validationState.value = validationResult
+                return false
+            }
+        }
+
+        return try {
+            saveMultiDayScheduleUseCase(
+                versionId = version.id,
+                anchorId = id,
+                subjectId = subjectId,
+                days = selectedDays,
+                startTime = startTime,
+                endTime = endTime,
+                room = room,
+                teacher = teacher
+            )
+            detectAndPromptBackfill(subjectId = subjectId, version = version)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun dismissBackfillPrompt() {
+        _pendingBackfillPrompt.value = null
+    }
+
+    private suspend fun detectAndPromptBackfill(subjectId: Long, version: SemesterVersion) {
+        val today = LocalDate.now()
+        if (version.startDate.isAfter(today)) {
+            _pendingBackfillPrompt.value = null
+            return
+        }
+
+        val subjectSchedules = scheduleRepository.getSchedulesBySubject(subjectId)
+            .filter { it.versionId == version.id }
+        if (subjectSchedules.isEmpty()) {
+            _pendingBackfillPrompt.value = null
+            return
+        }
+
+        val attendance = attendanceRepository.observeAttendanceHistory().first()
+        val missing = detectMissingAttendanceUseCase(
+            schedules = subjectSchedules,
+            attendance = attendance,
+            from = version.startDate,
+            to = today
+        )
+
+        _pendingBackfillPrompt.value = if (missing.isEmpty()) {
+            null
+        } else {
+            val subjectName = subjectRepository.getSubjects()
+                .find { it.id == subjectId }?.name ?: "Subject"
+            BackfillPrompt(
+                subjectId = subjectId,
+                subjectName = subjectName,
+                missingCount = missing.size
+            )
         }
     }
 

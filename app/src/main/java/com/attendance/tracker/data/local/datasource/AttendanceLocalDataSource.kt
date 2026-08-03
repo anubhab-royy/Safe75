@@ -26,6 +26,8 @@ interface AttendanceLocalDataSource {
 
     suspend fun getAttendanceById(id: Long): AttendanceEntity?
 
+    suspend fun getAttendanceForSubject(subjectId: Long): List<AttendanceEntity>
+
     suspend fun getAttendanceForDateSync(date: LocalDate): List<AttendanceEntity>
 
     suspend fun insertAttendance(attendance: AttendanceEntity): Long
@@ -78,6 +80,10 @@ class AttendanceLocalDataSourceImpl @Inject constructor(
 
     override suspend fun getAttendanceById(id: Long): AttendanceEntity? {
         return attendanceDao.getAttendanceById(id)
+    }
+
+    override suspend fun getAttendanceForSubject(subjectId: Long): List<AttendanceEntity> {
+        return attendanceDao.getAttendanceBySubjectSync(subjectId)
     }
 
     override suspend fun getAttendanceForDateSync(date: LocalDate): List<AttendanceEntity> {

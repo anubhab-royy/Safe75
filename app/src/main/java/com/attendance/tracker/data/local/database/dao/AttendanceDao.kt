@@ -37,6 +37,9 @@ interface AttendanceDao {
     @Query("SELECT * FROM attendance_records WHERE subjectId = :subjectId ORDER BY date DESC, createdAt DESC")
     fun getAttendanceBySubject(subjectId: Long): Flow<List<AttendanceEntity>>
 
+    @Query("SELECT * FROM attendance_records WHERE subjectId = :subjectId ORDER BY date DESC, createdAt DESC")
+    suspend fun getAttendanceBySubjectSync(subjectId: Long): List<AttendanceEntity>
+
     @Query("SELECT * FROM attendance_records WHERE date = :date ORDER BY createdAt DESC")
     fun getAttendanceByDate(date: LocalDate): Flow<List<AttendanceEntity>>
 

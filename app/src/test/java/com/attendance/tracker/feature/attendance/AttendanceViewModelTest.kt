@@ -52,6 +52,8 @@ class ReactiveFakeAttendanceRepository : com.attendance.tracker.domain.repositor
 
     override suspend fun getAttendanceById(id: Long): Attendance? = _list.value.find { it.id == id }
 
+    override suspend fun getAttendanceForSubject(subjectId: Long): List<Attendance> = _list.value.filter { it.subjectId == subjectId }
+
     override suspend fun getAttendanceForDateSync(date: LocalDate): List<Attendance> = _list.value.filter { it.date == date }
 
     override suspend fun insertAttendance(attendance: Attendance): Long {

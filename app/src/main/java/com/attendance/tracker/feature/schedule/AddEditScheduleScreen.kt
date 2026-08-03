@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -59,15 +62,17 @@ import java.time.format.DateTimeFormatter
 fun AddEditScheduleScreen(
     scheduleId: Long,
     onNavigateBack: () -> Unit,
+    onNavigateToBackfill: (Long) -> Unit,
     viewModel: ScheduleViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
     val subjects by viewModel.subjects.collectAsState()
     val validationState by viewModel.validationState.collectAsState()
     val conflicts by viewModel.conflicts.collectAsState()
+    val pendingBackfill by viewModel.pendingBackfillPrompt.collectAsState()
 
     var selectedSubject by remember { mutableStateOf<Subject?>(null) }
-    var selectedDay by remember { mutableStateOf(WeekDay.Monday) }
+    var selectedDays by remember { mutableStateOf(setOf<WeekDay>()) }
     var startTime by remember { mutableStateOf(LocalTime.of(9, 0)) }
     var endTime by remember { mutableStateOf(LocalTime.of(10, 0)) }
     var room by remember { mutableStateOf("") }
@@ -79,7 +84,6 @@ fun AddEditScheduleScreen(
     var showEndTimePicker by remember { mutableStateOf(false) }
 
     var showSubjectDropdown by remember { mutableStateOf(false) }
-    var showDayDropdown by remember { mutableStateOf(false) }
 
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
@@ -89,7 +93,7 @@ fun AddEditScheduleScreen(
             val schedule = viewModel.getScheduleById(scheduleId)
             if (schedule != null) {
                 selectedSubject = subjects.find { it.id == schedule.subjectId }
-                selectedDay = schedule.dayOfWeek
+                selectedDays = setOf(schedule.dayOfWeek)
                 startTime = schedule.startTime
                 endTime = schedule.endTime
                 room = schedule.room ?: ""
@@ -103,7 +107,7 @@ fun AddEditScheduleScreen(
     }
 
     fun hasChanges(): Boolean {
-        return room.isNotBlank() || teacher.isNotBlank() || startTime != LocalTime.of(9, 0) || endTime != LocalTime.of(10, 0)
+        return room.isNotBlank() || teacher.isNotBlank() || startTime != LocalTime.of(9, 0) || endTime != LocalTime.of(10, 0) || selectedDays.isNotEmpty()
     }
 
     val onBackRequest = {
@@ -149,6 +153,45 @@ fun AddEditScheduleScreen(
                 subjects.find { it.id == id }?.name ?: "Unknown Subject"
             },
             onDismiss = { viewModel.clearValidationError() }
+        )
+    }
+
+    // Backfill Prompt Dialog (surfaced after saving a schedule with missing past attendance)
+    pendingBackfill?.let { prompt ->
+        AlertDialog(
+            onDismissRequest = {
+                viewModel.dismissBackfillPrompt()
+                onNavigateBack()
+            },
+            title = { Text("Backfill Attendance") },
+            text = {
+                Text(
+                    "${prompt.subjectName} has ${prompt.missingCount} past " +
+                            "${if (prompt.missingCount == 1) "class" else "classes"} without attendance. " +
+                            "Would you like to fill them now?"
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val subjectId = prompt.subjectId
+                        viewModel.dismissBackfillPrompt()
+                        onNavigateToBackfill(subjectId)
+                    }
+                ) {
+                    Text("Backfill Now")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.dismissBackfillPrompt()
+                        onNavigateBack()
+                    }
+                ) {
+                    Text("Later")
+                }
+            }
         )
     }
 
@@ -269,36 +312,38 @@ fun AddEditScheduleScreen(
                 }
             }
 
-            // Day of Week Dropdown Selector
-            Text("Day of the Week", style = MaterialTheme.typography.titleMedium)
-            Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = selectedDay.name,
-                    onValueChange = {},
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showDayDropdown = true },
-                    enabled = false,
-                    colors = androidx.compose.material3.TextFieldDefaults.colors(
-                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-                DropdownMenu(
-                    expanded = showDayDropdown,
-                    onDismissRequest = { showDayDropdown = false }
-                ) {
-                    WeekDay.values().forEach { day ->
-                        DropdownMenuItem(
-                            text = { Text(day.name) },
-                            onClick = {
-                                selectedDay = day
-                                showDayDropdown = false
+            // Days of the Week Multi-Select Picker
+            Text("Days of the Week", style = MaterialTheme.typography.titleMedium)
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)
+            ) {
+                WeekDay.ordered.forEach { day ->
+                    val isSelected = day in selectedDays
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = {
+                            selectedDays = if (isSelected) {
+                                selectedDays - day
+                            } else {
+                                selectedDays + day
                             }
+                        },
+                        label = { Text(day.name) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                    }
+                    )
                 }
+            }
+            if (selectedDays.isEmpty()) {
+                Text(
+                    text = "Select at least one day",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
             }
 
             // Time Selector Buttons Row
@@ -372,10 +417,10 @@ fun AddEditScheduleScreen(
                     onClick = {
                         val subId = selectedSubject?.id ?: return@Button
                         coroutineScope.launch {
-                            val success = viewModel.saveSchedule(
+                            val success = viewModel.saveScheduleMultiDay(
                                 id = if (scheduleId == -1L) 0L else scheduleId,
                                 subjectId = subId,
-                                day = selectedDay,
+                                days = selectedDays,
                                 startTime = startTime,
                                 endTime = endTime,
                                 room = room,
@@ -383,10 +428,15 @@ fun AddEditScheduleScreen(
                             )
                             if (success) {
                                 viewModel.clearValidationError()
-                                onNavigateBack()
+                                // If missing historical attendance was detected the prompt
+                                // dialog drives navigation; otherwise return to the schedule list.
+                                if (viewModel.pendingBackfillPrompt.value == null) {
+                                    onNavigateBack()
+                                }
                             }
                         }
                     },
+                    enabled = selectedDays.isNotEmpty(),
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Save")

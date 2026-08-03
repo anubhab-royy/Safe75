@@ -46,6 +46,7 @@ fun HomeScreen(
     initialTabRoute: String = Screen.Dashboard.route,
     onNavigateToAddEditSubject: (Long) -> Unit,
     onNavigateToAddEditSchedule: (Long) -> Unit,
+    onNavigateToBackfill: (Long) -> Unit,
     onNavigateToAttendanceHistory: () -> Unit,
     onNavigateToSimulator: () -> Unit,
     onNavigateToLeavePlanner: () -> Unit,
@@ -130,7 +131,8 @@ fun HomeScreen(
                     }
                     composable(Screen.Subjects.route) {
                         SubjectsScreen(
-                            onNavigateToAddEditSubject = onNavigateToAddEditSubject
+                            onNavigateToAddEditSubject = onNavigateToAddEditSubject,
+                            onNavigateToBackfill = onNavigateToBackfill
                         )
                     }
                     composable(Screen.Schedule.route) {

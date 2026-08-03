@@ -21,6 +21,8 @@ interface AttendanceRepository {
 
     suspend fun getAttendanceById(id: Long): Attendance?
 
+    suspend fun getAttendanceForSubject(subjectId: Long): List<Attendance>
+
     suspend fun getAttendanceForDateSync(date: LocalDate): List<Attendance>
 
     suspend fun insertAttendance(attendance: Attendance): Long

@@ -17,6 +17,7 @@ import com.attendance.tracker.domain.validation.ValidationResult
 import com.attendance.tracker.feature.subject.model.SubjectUiModel
 import com.attendance.tracker.feature.subject.model.SubjectWithStats
 import com.attendance.tracker.domain.repository.AttendanceRepository
+import com.attendance.tracker.domain.repository.ScheduleRepository
 import com.attendance.tracker.domain.repository.SemesterRepository
 import com.attendance.tracker.domain.repository.SettingsRepository
 import com.attendance.tracker.domain.usecase.attendance.CalculateAttendanceStatisticsUseCase
@@ -51,6 +52,7 @@ class SubjectViewModel @Inject constructor(
     private val getSubjectsUseCase: GetSubjectsUseCase,
     private val validator: SubjectValidator,
     private val attendanceRepository: AttendanceRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val settingsRepository: SettingsRepository,
     private val semesterRepository: SemesterRepository,
     private val calculateStatisticsUseCase: CalculateAttendanceStatisticsUseCase
@@ -68,28 +70,43 @@ class SubjectViewModel @Inject constructor(
     private val _validationState = MutableStateFlow<ValidationResult>(ValidationResult.Valid)
     val validationState: StateFlow<ValidationResult> = _validationState.asStateFlow()
 
+    private val _schedules = MutableStateFlow<List<com.attendance.tracker.domain.model.Schedule>>(emptyList())
+
     init {
         loadSubjects()
+        viewModelScope.launch {
+            semesterRepository.observeActiveVersion().collect { active ->
+                if (active != null) {
+                    scheduleRepository.observeSchedulesForVersion(active.id).collect { list ->
+                        _schedules.value = list
+                    }
+                } else {
+                    _schedules.value = emptyList()
+                }
+            }
+        }
     }
 
     private fun loadSubjects() {
         viewModelScope.launch {
             _subjectsState.value = UiState.Loading
             // Kotlin's typed combine overload supports max 5 flows.
-            // Split into two nested combines to handle 6 sources.
+            // Split into nested combines to handle 6+ sources.
             combine(
-                observeSubjectsUseCase(),
-                attendanceRepository.observeAttendanceHistory(),
-                semesterRepository.observeActiveVersion()
-            ) { rawSubjects, history, activeVer ->
-                Triple(rawSubjects, history, activeVer)
-            }.combine(
+                combine(
+                    observeSubjectsUseCase(),
+                    attendanceRepository.observeAttendanceHistory(),
+                    semesterRepository.observeActiveVersion()
+                ) { rawSubjects, history, activeVer ->
+                    Triple(rawSubjects, history, activeVer)
+                },
                 combine(
                     settingsRepository.getAttendanceTarget(),
                     _searchQuery,
                     _sortOption
-                ) { target, query, sort -> Triple(target, query, sort) }
-            ) { (rawSubjects, history, activeVer), (target, query, sort) ->
+                ) { target, query, sort -> Triple(target, query, sort) },
+                _schedules
+            ) { (rawSubjects, history, activeVer), (target, query, sort), schedules ->
                 val filteredHistory = if (activeVer == null) emptyList() else {
                     history.filter { !it.date.isBefore(activeVer.startDate) && !it.date.isAfter(activeVer.endDate) }
                 }
@@ -108,6 +125,11 @@ class SubjectViewModel @Inject constructor(
                     SubjectSortOption.RECENTLY_ADDED -> filtered.sortedByDescending { it.createdAt }
                     SubjectSortOption.ATTENDANCE_GOAL -> filtered.sortedByDescending { it.personalAttendanceGoal }
                 }
+
+                val subjectIds = filtered.map { it.id }.toSet()
+                val schedulesBySubject = schedules
+                    .filter { it.subjectId in subjectIds }
+                    .groupBy { it.subjectId }
 
                 sorted.map { subject ->
                     val subjectHistory = filteredHistory.filter { it.subjectId == subject.id }
@@ -135,6 +157,7 @@ class SubjectViewModel @Inject constructor(
                         safeMissCount = stats.remainingSafeClasses,
                         classesNeeded = stats.classesNeededToReachGoal,
                         safetyStatus = status,
+                        hasSchedules = schedulesBySubject.containsKey(subject.id),
                         trend = "●"
                     )
                 }

@@ -69,6 +69,7 @@ import java.util.Locale
 @Composable
 fun SubjectsScreen(
     onNavigateToAddEditSubject: (Long) -> Unit,
+    onNavigateToBackfill: (Long) -> Unit,
     viewModel: SubjectViewModel = hiltViewModel()
 ) {
     val subjectsState by viewModel.subjectsState.collectAsState()
@@ -237,7 +238,8 @@ fun SubjectsScreen(
                             SubjectCardItem(
                                 subject = subject,
                                 onClick = { onNavigateToAddEditSubject(subject.id) },
-                                onDelete = { subjectToDelete = subject }
+                                onDelete = { subjectToDelete = subject },
+                                onBackfill = { onNavigateToBackfill(subject.id) }
                             )
                         }
                     }
@@ -251,7 +253,8 @@ fun SubjectsScreen(
 private fun SubjectCardItem(
     subject: SubjectWithStats,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onBackfill: () -> Unit
 ) {
     val statusColor = when (subject.safetyStatus.uppercase(Locale.ROOT)) {
         "GOOD" -> Color(0xFF2E7D32)
@@ -317,9 +320,21 @@ private fun SubjectCardItem(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "No attendance logged yet",
+                            text = if (subject.hasSchedules) "No attendance recorded yet" else "No attendance logged yet",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                    if (subject.hasSchedules) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Backfill needed",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable { onBackfill() }
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
                         )
                     }
                 }

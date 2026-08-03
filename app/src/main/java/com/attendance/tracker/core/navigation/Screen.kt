@@ -31,6 +31,12 @@ sealed class Screen(val route: String) {
         }
     }
 
+    object BackfillWizard : Screen("backfill_wizard?subjectId={subjectId}") {
+        fun createRoute(subjectId: Long = -1L): String {
+            return "backfill_wizard?subjectId=$subjectId"
+        }
+    }
+
     object AttendanceHistory : Screen("attendance_history")
 
     object AttendanceDetails : Screen("attendance_details?attendanceId={attendanceId}") {

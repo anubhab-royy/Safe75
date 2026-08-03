@@ -30,6 +30,7 @@ import com.attendance.tracker.feature.archive.ArchiveScreen
 import com.attendance.tracker.feature.backup.BackupScreen
 import com.attendance.tracker.feature.backup.RestoreScreen
 import com.attendance.tracker.feature.backup.SemesterResetScreen
+import com.attendance.tracker.feature.backfill.BackfillWizardScreen
 import com.attendance.tracker.feature.integrity.IntegrityScreen
 
 /**
@@ -88,6 +89,9 @@ fun AppNavHost(
                 },
                 onNavigateToAddEditSchedule = { scheduleId ->
                     navController.navigate(Screen.AddEditSchedule.createRoute(scheduleId))
+                },
+                onNavigateToBackfill = { subjectId ->
+                    navController.navigate(Screen.BackfillWizard.createRoute(subjectId))
                 },
                 onNavigateToAttendanceHistory = {
                     navController.navigate(Screen.AttendanceHistory.route)
@@ -156,6 +160,29 @@ fun AppNavHost(
             val scheduleId = backStackEntry.arguments?.getLong("scheduleId") ?: -1L
             AddEditScheduleScreen(
                 scheduleId = scheduleId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToBackfill = { subjectId ->
+                    navController.navigate(Screen.BackfillWizard.createRoute(subjectId)) {
+                        popUpTo(Screen.MainGraph.route)
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Screen.BackfillWizard.route,
+            arguments = listOf(
+                navArgument("subjectId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
+            )
+        ) { backStackEntry ->
+            val subjectId = backStackEntry.arguments?.getLong("subjectId") ?: -1L
+            BackfillWizardScreen(
+                subjectId = subjectId,
                 onNavigateBack = {
                     navController.popBackStack()
                 }

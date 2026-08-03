@@ -39,6 +39,8 @@ class FakeAttendanceRepository : AttendanceRepository {
 
     override suspend fun getAttendanceById(id: Long): Attendance? = list.find { it.id == id }
 
+    override suspend fun getAttendanceForSubject(subjectId: Long): List<Attendance> = list.filter { it.subjectId == subjectId }
+
     override suspend fun getAttendanceForDateSync(date: LocalDate): List<Attendance> = list.filter { it.date == date }
 
     override suspend fun insertAttendance(attendance: Attendance): Long {

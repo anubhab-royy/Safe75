@@ -8,6 +8,7 @@ import com.attendance.tracker.domain.usecase.subject.GetSubjectUseCase
 import com.attendance.tracker.domain.usecase.subject.GetSubjectsUseCase
 import com.attendance.tracker.domain.usecase.subject.ObserveSubjectsUseCase
 import com.attendance.tracker.domain.usecase.subject.UpdateSubjectUseCase
+import com.attendance.tracker.domain.usecase.schedule.FakeScheduleRepository
 import com.attendance.tracker.domain.validation.SubjectValidator
 import com.attendance.tracker.domain.validation.ValidationResult
 import com.attendance.tracker.domain.usecase.planner.LocalFakeAttendanceRepository
@@ -64,6 +65,7 @@ class SubjectViewModelTest {
             getSubjectsUseCase = getSubjectsUseCase,
             validator = validator,
             attendanceRepository = attendanceRepo,
+            scheduleRepository = FakeScheduleRepository(),
             settingsRepository = settingsRepo,
             semesterRepository = FakeSemesterRepository(),
             calculateStatisticsUseCase = CalculateAttendanceStatisticsUseCase()

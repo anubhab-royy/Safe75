@@ -50,6 +50,10 @@ class AttendanceRepositoryImpl @Inject constructor(
         return localDataSource.getAttendanceById(id)?.let { AttendanceMapper.entityToDomain(it) }
     }
 
+    override suspend fun getAttendanceForSubject(subjectId: Long): List<Attendance> {
+        return localDataSource.getAttendanceForSubject(subjectId).map { AttendanceMapper.entityToDomain(it) }
+    }
+
     override suspend fun getAttendanceForDateSync(date: LocalDate): List<Attendance> {
         return localDataSource.getAttendanceForDateSync(date).map { AttendanceMapper.entityToDomain(it) }
     }

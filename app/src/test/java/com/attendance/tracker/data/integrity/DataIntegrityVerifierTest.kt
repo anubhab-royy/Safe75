@@ -82,6 +82,7 @@ class FakeAttendanceDao : AttendanceDao {
     override fun getAttendanceBySubject(subjectId: Long): Flow<List<AttendanceEntity>> = flowOf(list.filter { it.subjectId == subjectId })
     override fun getAttendanceByDate(date: LocalDate): Flow<List<AttendanceEntity>> = flowOf(list.filter { it.date == date })
     override suspend fun getAttendanceByDateSync(date: LocalDate): List<AttendanceEntity> = list.filter { it.date == date }
+    override suspend fun getAttendanceBySubjectSync(subjectId: Long): List<AttendanceEntity> = list.filter { it.subjectId == subjectId }
     override fun observeTodayAttendance(date: LocalDate): Flow<List<AttendanceEntity>> = flowOf(emptyList())
     override fun searchAttendance(query: String): Flow<List<AttendanceEntity>> = flowOf(emptyList())
     override suspend fun checkDuplicateAttendance(subjectId: Long, scheduleId: Long, date: LocalDate): Boolean = false
