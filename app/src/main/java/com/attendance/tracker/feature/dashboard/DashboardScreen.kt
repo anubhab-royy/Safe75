@@ -570,34 +570,44 @@ private fun AttendanceButton(
 
 @Composable
 private fun OverallStatisticsCard(stats: DashboardStatistics, goal: Double) {
-    val statusText = when (stats.safetyStatus.uppercase(Locale.ROOT)) {
+    val hasNoData = stats.totalClasses == 0
+    val isDark = isSystemInDarkTheme()
+
+    val statusText = if (hasNoData) "No Data" else when (stats.safetyStatus.uppercase(Locale.ROOT)) {
         "GOOD" -> "Good"
         "WARNING" -> "Near Goal"
         else -> "Critical"
     }
 
-    val isDark = isSystemInDarkTheme()
-    val (backgroundColor, contentColor, statusColor) = when (stats.safetyStatus.uppercase(Locale.ROOT)) {
-        "GOOD" -> {
-            Triple(
-                if (isDark) Color(0xFF1B5E20).copy(alpha = 0.2f) else Color(0xFFE8F5E9),
-                if (isDark) Color(0xFFA5D6A7) else Color(0xFF1B5E20),
-                if (isDark) Color(0xFFA5D6A7) else Color(0xFF2E7D32)
-            )
-        }
-        "WARNING" -> {
-            Triple(
-                if (isDark) Color(0xFFE65100).copy(alpha = 0.15f) else Color(0xFFFFF3E0),
-                if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100),
-                if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100)
-            )
-        }
-        else -> { // CRITICAL
-            Triple(
-                if (isDark) Color(0xFFB71C1C).copy(alpha = 0.15f) else Color(0xFFFFEBEE),
-                if (isDark) Color(0xFFEF9A9A) else Color(0xFFB71C1C),
-                if (isDark) Color(0xFFEF9A9A) else Color(0xFFC62828)
-            )
+    val (backgroundColor, contentColor, statusColor) = if (hasNoData) {
+        Triple(
+            if (isDark) Color(0xFF37474F).copy(alpha = 0.2f) else Color(0xFFECEFF1),
+            if (isDark) Color(0xFFB0BEC5) else Color(0xFF37474F),
+            if (isDark) Color(0xFFB0BEC5) else Color(0xFF455A64)
+        )
+    } else {
+        when (stats.safetyStatus.uppercase(Locale.ROOT)) {
+            "GOOD" -> {
+                Triple(
+                    if (isDark) Color(0xFF1B5E20).copy(alpha = 0.2f) else Color(0xFFE8F5E9),
+                    if (isDark) Color(0xFFA5D6A7) else Color(0xFF1B5E20),
+                    if (isDark) Color(0xFFA5D6A7) else Color(0xFF2E7D32)
+                )
+            }
+            "WARNING" -> {
+                Triple(
+                    if (isDark) Color(0xFFE65100).copy(alpha = 0.15f) else Color(0xFFFFF3E0),
+                    if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100),
+                    if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100)
+                )
+            }
+            else -> { // CRITICAL
+                Triple(
+                    if (isDark) Color(0xFFB71C1C).copy(alpha = 0.15f) else Color(0xFFFFEBEE),
+                    if (isDark) Color(0xFFEF9A9A) else Color(0xFFB71C1C),
+                    if (isDark) Color(0xFFEF9A9A) else Color(0xFFC62828)
+                )
+            }
         }
     }
 
@@ -618,20 +628,29 @@ private fun OverallStatisticsCard(stats: DashboardStatistics, goal: Double) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Overall Attendance",
                         style = MaterialTheme.typography.titleMedium,
                         color = contentColor.copy(alpha = 0.8f)
                     )
-                    Text(
-                        text = String.format(Locale.getDefault(), "%.1f%%", stats.overallPercentage),
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 48.sp
-                        ),
-                        color = statusColor
-                    )
+                    if (hasNoData) {
+                        Text(
+                            text = "No attendance recorded",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = statusColor,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    } else {
+                        Text(
+                            text = String.format(Locale.getDefault(), "%.1f%%", stats.overallPercentage),
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 48.sp
+                            ),
+                            color = statusColor
+                        )
+                    }
                     Text(
                         text = "Goal: ${goal.toInt()}%",
                         style = MaterialTheme.typography.bodyMedium,
@@ -662,14 +681,14 @@ private fun OverallStatisticsCard(stats: DashboardStatistics, goal: Double) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                CountItem(label = "Present", value = stats.presentCount.toString(), color = Color(0xFF2E7D32), contentColor = contentColor)
-                CountItem(label = "Absent", value = stats.absentCount.toString(), color = Color(0xFFC62828), contentColor = contentColor)
-                CountItem(label = "Cancelled", value = stats.cancelledCount.toString(), color = Color(0xFF757575), contentColor = contentColor)
+                CountItem(label = "Present", value = if (hasNoData) "-" else stats.presentCount.toString(), color = Color(0xFF2E7D32), contentColor = contentColor)
+                CountItem(label = "Absent", value = if (hasNoData) "-" else stats.absentCount.toString(), color = Color(0xFFC62828), contentColor = contentColor)
+                CountItem(label = "Cancelled", value = if (hasNoData) "-" else stats.cancelledCount.toString(), color = Color(0xFF757575), contentColor = contentColor)
                 
                 // Total classes (Secondary Information, smaller text)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = stats.totalClasses.toString(),
+                        text = if (hasNoData) "-" else stats.totalClasses.toString(),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = contentColor.copy(alpha = 0.7f)
                     )
@@ -692,14 +711,12 @@ private fun OverallStatisticsCard(stats: DashboardStatistics, goal: Double) {
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val (recIcon, recMessage) = if (stats.safeMissCount > 0) {
-                    Pair(Icons.Default.Info, "You may safely miss the next ${stats.safeMissCount} classes")
-                } else if (stats.classesNeeded > 0) {
-                    Pair(Icons.Default.Warning, "Attend next ${stats.classesNeeded} classes to reach ${goal.toInt()}% goal")
-                } else if (stats.classesNeeded == -1) {
-                    Pair(Icons.Default.Warning, "Goal is mathematically unreachable")
-                } else {
-                    Pair(Icons.Default.Info, "✓ Goal achieved! Keep it up.")
+                val (recIcon, recMessage) = when {
+                    hasNoData -> Pair(Icons.Default.Info, "Mark past attendance or log today's classes to begin tracking.")
+                    stats.safeMissCount > 0 -> Pair(Icons.Default.Info, "You may safely miss the next ${stats.safeMissCount} classes")
+                    stats.classesNeeded > 0 -> Pair(Icons.Default.Warning, "Attend next ${stats.classesNeeded} classes to reach ${goal.toInt()}% goal")
+                    stats.classesNeeded == -1 -> Pair(Icons.Default.Warning, "Goal is mathematically unreachable")
+                    else -> Pair(Icons.Default.Info, "✓ Goal achieved! Keep it up.")
                 }
                 Icon(
                     imageVector = recIcon,

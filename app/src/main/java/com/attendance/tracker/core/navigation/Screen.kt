@@ -61,5 +61,10 @@ sealed class Screen(val route: String) {
     object Ocr : Screen("ocr_dest")
     object Planner : Screen("planner_dest")
     object Semester : Screen("semester_dest")
+    object SemesterSetup : Screen("semester_setup?semesterId={semesterId}") {
+        fun createRoute(semesterId: Long = -1L): String {
+            return "semester_setup?semesterId=$semesterId"
+        }
+    }
     object Backup : Screen("backup_dest")
 }

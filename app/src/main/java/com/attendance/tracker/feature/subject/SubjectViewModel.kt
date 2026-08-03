@@ -17,6 +17,7 @@ import com.attendance.tracker.domain.validation.ValidationResult
 import com.attendance.tracker.feature.subject.model.SubjectUiModel
 import com.attendance.tracker.feature.subject.model.SubjectWithStats
 import com.attendance.tracker.domain.repository.AttendanceRepository
+import com.attendance.tracker.domain.repository.SemesterRepository
 import com.attendance.tracker.domain.repository.SettingsRepository
 import com.attendance.tracker.domain.usecase.attendance.CalculateAttendanceStatisticsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,6 +52,7 @@ class SubjectViewModel @Inject constructor(
     private val validator: SubjectValidator,
     private val attendanceRepository: AttendanceRepository,
     private val settingsRepository: SettingsRepository,
+    private val semesterRepository: SemesterRepository,
     private val calculateStatisticsUseCase: CalculateAttendanceStatisticsUseCase
 ) : ViewModel() {
 
@@ -73,13 +75,25 @@ class SubjectViewModel @Inject constructor(
     private fun loadSubjects() {
         viewModelScope.launch {
             _subjectsState.value = UiState.Loading
+            // Kotlin's typed combine overload supports max 5 flows.
+            // Split into two nested combines to handle 6 sources.
             combine(
                 observeSubjectsUseCase(),
                 attendanceRepository.observeAttendanceHistory(),
-                settingsRepository.getAttendanceTarget(),
-                _searchQuery,
-                _sortOption
-            ) { rawSubjects, history, target, query, sort ->
+                semesterRepository.observeActiveVersion()
+            ) { rawSubjects, history, activeVer ->
+                Triple(rawSubjects, history, activeVer)
+            }.combine(
+                combine(
+                    settingsRepository.getAttendanceTarget(),
+                    _searchQuery,
+                    _sortOption
+                ) { target, query, sort -> Triple(target, query, sort) }
+            ) { (rawSubjects, history, activeVer), (target, query, sort) ->
+                val filteredHistory = if (activeVer == null) emptyList() else {
+                    history.filter { !it.date.isBefore(activeVer.startDate) && !it.date.isAfter(activeVer.endDate) }
+                }
+
                 val filtered = if (query.isBlank()) {
                     rawSubjects
                 } else {
@@ -96,13 +110,14 @@ class SubjectViewModel @Inject constructor(
                 }
 
                 sorted.map { subject ->
-                    val subjectHistory = history.filter { it.subjectId == subject.id }
+                    val subjectHistory = filteredHistory.filter { it.subjectId == subject.id }
                     val stats = calculateStatisticsUseCase(
                         subjectHistory,
                         subject.requiredAttendancePercentage,
                         subject.personalAttendanceGoal
                     )
                     val status = when {
+                        stats.totalClasses == 0 -> "NEUTRAL"
                         stats.attendancePercentage < subject.personalAttendanceGoal -> "CRITICAL"
                         stats.remainingSafeClasses == 0 -> "WARNING"
                         else -> "GOOD"

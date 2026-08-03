@@ -26,7 +26,7 @@ class CalculateAttendanceStatisticsUseCase @Inject constructor() {
         val percentage = if (total > 0) {
             (present.toDouble() / total.toDouble()) * 100.0
         } else {
-            100.0
+            -1.0
         }
 
         val r = requiredPercentage.toDouble()

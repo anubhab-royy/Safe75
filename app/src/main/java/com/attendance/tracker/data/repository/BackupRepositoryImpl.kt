@@ -126,7 +126,7 @@ class BackupRepositoryImpl @Inject constructor(
                 e.endTime.toString(), e.room, e.teacherOverride, e.versionId, e.createdAt, e.updatedAt)
         }
         val semesters = semesterDao.getVersions().map { e ->
-            BackupSemesterDto(e.id, e.name, e.isActive, e.createdAt)
+            BackupSemesterDto(e.id, e.name, e.isActive, e.createdAt, e.startDate.toString(), e.endDate.toString())
         }
         val attendance = attendanceDao.getAllAttendance().map { e ->
             BackupAttendanceDto(e.id, e.subjectId, e.scheduleId, e.date.toString(),
@@ -181,8 +181,10 @@ class BackupRepositoryImpl @Inject constructor(
 
                 if (options.restoreSemesterVersions) {
                     data.semesterVersions.forEach { dto ->
+                        val start = runCatching { LocalDate.parse(dto.startDate) }.getOrNull() ?: LocalDate.now()
+                        val end = runCatching { LocalDate.parse(dto.endDate) }.getOrNull() ?: LocalDate.now().plusMonths(4)
                         semesterDao.upsertVersion(
-                            SemesterVersionEntity(dto.id, dto.name, dto.isActive, dto.createdAt)
+                            SemesterVersionEntity(dto.id, dto.name, dto.isActive, dto.createdAt, start, end)
                         )
                         semestersRestored++
                     }

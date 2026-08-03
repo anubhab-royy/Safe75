@@ -196,12 +196,24 @@ class DashboardViewModel @Inject constructor(
     /**
      * Attendance history logs.
      */
-    val filteredHistory: StateFlow<List<Attendance>> = attendanceRepository.observeAttendanceHistory()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.Eagerly,
-            initialValue = emptyList()
-        )
+    val filteredHistory: StateFlow<List<Attendance>> = combine(
+        attendanceRepository.observeAttendanceHistory(),
+        activeVersion,
+        _schedulesMap
+    ) { history, activeVer, schedulesMap ->
+        if (activeVer == null) emptyList()
+        else {
+            history.filter { record ->
+                val isWithinDateRange = !record.date.isBefore(activeVer.startDate) && !record.date.isAfter(activeVer.endDate)
+                val belongsToActiveSchedule = record.scheduleId == 0L || schedulesMap.containsKey(record.scheduleId)
+                isWithinDateRange && belongsToActiveSchedule
+            }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = emptyList()
+    )
 
     /**
      * Dashboard statistics.
@@ -214,6 +226,7 @@ class DashboardViewModel @Inject constructor(
         val gInt = goal.toInt()
         val stats = calculateStatisticsUseCase(history, gInt, gInt)
         val status = when {
+            stats.totalClasses == 0 -> "NEUTRAL"
             stats.attendancePercentage < goal -> "CRITICAL"
             stats.remainingSafeClasses == 0 -> "WARNING"
             else -> "GOOD"

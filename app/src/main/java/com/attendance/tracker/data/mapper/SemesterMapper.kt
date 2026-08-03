@@ -12,7 +12,9 @@ object SemesterMapper {
             id = entity.id,
             name = entity.name,
             isActive = entity.isActive,
-            createdAt = entity.createdAt
+            createdAt = entity.createdAt,
+            startDate = entity.startDate,
+            endDate = entity.endDate
         )
     }
 
@@ -21,7 +23,9 @@ object SemesterMapper {
             id = domain.id,
             name = domain.name,
             isActive = domain.isActive,
-            createdAt = domain.createdAt
+            createdAt = domain.createdAt,
+            startDate = domain.startDate,
+            endDate = domain.endDate
         )
     }
 }

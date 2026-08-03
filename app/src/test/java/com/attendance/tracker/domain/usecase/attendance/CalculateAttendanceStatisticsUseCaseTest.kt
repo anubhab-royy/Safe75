@@ -67,4 +67,12 @@ class CalculateAttendanceStatisticsUseCaseTest {
         val stats = calculateUseCase(records, requiredPercentage = 75, goalPercentage = 100)
         assertEquals(-1, stats.classesNeededToReachGoal) // Unreachable since absent count is > 0
     }
+
+    @Test
+    fun testNoAttendanceRecords_returnsNegativeOnePercentage() {
+        val stats = calculateUseCase(emptyList(), requiredPercentage = 75, goalPercentage = 80)
+        assertEquals(-1.0, stats.attendancePercentage, 0.0)
+        assertEquals(0, stats.totalClasses)
+        assertEquals(0, stats.presentCount)
+    }
 }

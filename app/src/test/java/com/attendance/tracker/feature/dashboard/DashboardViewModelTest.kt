@@ -143,13 +143,26 @@ class DashboardViewModelTest {
         // Default goal: 75.0%
         assertEquals(75.0, viewModel.attendanceGoal.value, 0.0)
 
+        // Activate a semester so filteredHistory doesn't return emptyList()
+        semesterRepo.insertVersion(
+            SemesterVersion(
+                id = 1L,
+                name = "Test Semester",
+                isActive = true,
+                startDate = LocalDate.now().minusMonths(3),
+                endDate = LocalDate.now().plusMonths(3)
+            )
+        )
+        semesterRepo.switchActiveVersion(1L)
+        advanceUntilIdle()
+
         // Add subjects and schedules
         val subjId = subjectRepo.insertSubject(Subject(id = 1L, name = "SE"))
         // Mark 4 present, 0 absent (100%)
-        attendanceRepo.insertAttendance(Attendance(id = 1L, subjectId = subjId, scheduleId = 10L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
-        attendanceRepo.insertAttendance(Attendance(id = 2L, subjectId = subjId, scheduleId = 10L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
-        attendanceRepo.insertAttendance(Attendance(id = 3L, subjectId = subjId, scheduleId = 10L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
-        attendanceRepo.insertAttendance(Attendance(id = 4L, subjectId = subjId, scheduleId = 10L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
+        attendanceRepo.insertAttendance(Attendance(id = 1L, subjectId = subjId, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
+        attendanceRepo.insertAttendance(Attendance(id = 2L, subjectId = subjId, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
+        attendanceRepo.insertAttendance(Attendance(id = 3L, subjectId = subjId, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
+        attendanceRepo.insertAttendance(Attendance(id = 4L, subjectId = subjId, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
         advanceUntilIdle()
 
         // With 75% goal, safety status should be GOOD

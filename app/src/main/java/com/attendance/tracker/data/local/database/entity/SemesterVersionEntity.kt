@@ -2,6 +2,7 @@ package com.attendance.tracker.data.local.database.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.time.LocalDate
 
 /**
  * Database Entity representing academic timetable versions.
@@ -12,5 +13,7 @@ data class SemesterVersionEntity(
     val id: Long = 0L,
     val name: String,
     val isActive: Boolean = false,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val startDate: LocalDate = LocalDate.now(),
+    val endDate: LocalDate = LocalDate.now().plusMonths(4)
 )

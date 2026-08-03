@@ -24,6 +24,7 @@ import com.attendance.tracker.feature.settings.NotificationSettingsScreen
 import com.attendance.tracker.feature.ocr.OCRImportScreen
 import com.attendance.tracker.feature.ocr.OCRReviewScreen
 import com.attendance.tracker.feature.welcome.WelcomeScreen
+import com.attendance.tracker.feature.semester.SemesterSetupScreen
 import com.attendance.tracker.feature.archive.ArchiveDetailsScreen
 import com.attendance.tracker.feature.archive.ArchiveScreen
 import com.attendance.tracker.feature.backup.BackupScreen
@@ -70,7 +71,7 @@ fun AppNavHost(
             composable(Screen.Welcome.route) {
                 WelcomeScreen(
                     onNavigateNext = {
-                        navController.navigate(Screen.MainGraph.route) {
+                        navController.navigate(Screen.SemesterSetup.createRoute(-1L)) {
                             popUpTo(Screen.RootGraph.route) { inclusive = true }
                         }
                     }
@@ -237,6 +238,30 @@ fun AppNavHost(
                 isTimetable = isTimetable,
                 imageUri = Uri.parse(uriStr),
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.SemesterSetup.route,
+            arguments = listOf(
+                navArgument("semesterId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
+            )
+        ) {
+            SemesterSetupScreen(
+                onNavigateToOcr = {
+                    navController.navigate(Screen.Ocr.route)
+                },
+                onNavigateToDashboard = {
+                    navController.navigate(Screen.MainGraph.route) {
+                        popUpTo(Screen.SemesterSetup.route) { inclusive = true }
+                    }
+                },
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
 

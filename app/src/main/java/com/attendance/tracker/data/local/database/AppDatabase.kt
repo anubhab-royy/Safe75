@@ -26,7 +26,7 @@ import com.attendance.tracker.data.local.database.entity.SubjectEntity
         AttendanceEntity::class,
         ArchiveEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

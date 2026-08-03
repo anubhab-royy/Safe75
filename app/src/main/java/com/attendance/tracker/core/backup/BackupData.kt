@@ -45,7 +45,9 @@ data class BackupSemesterDto(
     val id: Long,
     val name: String,
     val isActive: Boolean = false,
-    val createdAt: Long
+    val createdAt: Long,
+    val startDate: String = java.time.LocalDate.now().toString(),
+    val endDate: String = java.time.LocalDate.now().plusMonths(4).toString()
 )
 
 /**

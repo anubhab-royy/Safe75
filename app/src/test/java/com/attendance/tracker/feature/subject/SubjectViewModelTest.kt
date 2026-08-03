@@ -65,6 +65,7 @@ class SubjectViewModelTest {
             validator = validator,
             attendanceRepository = attendanceRepo,
             settingsRepository = settingsRepo,
+            semesterRepository = FakeSemesterRepository(),
             calculateStatisticsUseCase = CalculateAttendanceStatisticsUseCase()
         )
     }
@@ -180,4 +181,18 @@ class FakeSettingsRepository : com.attendance.tracker.domain.repository.Settings
     override suspend fun setAttendanceReminderEnabled(enabled: Boolean) {}
     override fun isMissedReminderEnabled(): Flow<Boolean> = kotlinx.coroutines.flow.emptyFlow()
     override suspend fun setMissedReminderEnabled(enabled: Boolean) {}
+}
+
+class FakeSemesterRepository : com.attendance.tracker.domain.repository.SemesterRepository {
+    override fun observeVersions(): kotlinx.coroutines.flow.Flow<List<com.attendance.tracker.domain.model.SemesterVersion>> =
+        kotlinx.coroutines.flow.flowOf(emptyList())
+    override fun observeActiveVersion(): kotlinx.coroutines.flow.Flow<com.attendance.tracker.domain.model.SemesterVersion?> =
+        kotlinx.coroutines.flow.flowOf(null)
+    override suspend fun getVersions(): List<com.attendance.tracker.domain.model.SemesterVersion> = emptyList()
+    override suspend fun getVersion(id: Long): com.attendance.tracker.domain.model.SemesterVersion? = null
+    override suspend fun getActiveVersion(): com.attendance.tracker.domain.model.SemesterVersion? = null
+    override suspend fun insertVersion(version: com.attendance.tracker.domain.model.SemesterVersion): Long = 0L
+    override suspend fun updateVersion(version: com.attendance.tracker.domain.model.SemesterVersion): Int = 0
+    override suspend fun deleteVersion(version: com.attendance.tracker.domain.model.SemesterVersion): Int = 0
+    override suspend fun switchActiveVersion(versionId: Long) {}
 }
