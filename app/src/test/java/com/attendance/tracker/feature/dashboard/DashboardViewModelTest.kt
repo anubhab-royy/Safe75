@@ -13,6 +13,10 @@ import com.attendance.tracker.domain.usecase.planner.LeavePlannerUseCase
 import com.attendance.tracker.domain.usecase.planner.LocalFakeAttendanceRepository
 import com.attendance.tracker.domain.usecase.planner.LocalFakeScheduleRepository
 import com.attendance.tracker.domain.usecase.planner.LocalFakeSubjectRepository
+import com.attendance.tracker.domain.usecase.attendance.MarkAttendanceUseCase
+import com.attendance.tracker.domain.usecase.attendance.UpdateAttendanceUseCase
+import com.attendance.tracker.domain.usecase.attendance.DeleteAttendanceUseCase
+import com.attendance.tracker.domain.validation.AttendanceValidator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -80,6 +84,10 @@ class DashboardViewModelTest {
         val getTodayAttendance = GetTodayAttendanceUseCase(attendanceRepo)
         val simulator = AttendanceSimulatorUseCase()
         val leavePlanner = LeavePlannerUseCase(subjectRepo, scheduleRepo, attendanceRepo)
+        val validator = AttendanceValidator()
+        val markAttendance = MarkAttendanceUseCase(attendanceRepo, validator)
+        val updateAttendance = UpdateAttendanceUseCase(attendanceRepo, validator)
+        val deleteAttendance = DeleteAttendanceUseCase(attendanceRepo)
 
         viewModel = DashboardViewModel(
             attendanceRepository = attendanceRepo,
@@ -89,7 +97,10 @@ class DashboardViewModelTest {
             calculateStatisticsUseCase = calculateStats,
             getTodayAttendanceUseCase = getTodayAttendance,
             attendanceSimulatorUseCase = simulator,
-            leavePlannerUseCase = leavePlanner
+            leavePlannerUseCase = leavePlanner,
+            markAttendanceUseCase = markAttendance,
+            updateAttendanceUseCase = updateAttendance,
+            deleteAttendanceUseCase = deleteAttendance
         )
     }
 
@@ -133,5 +144,65 @@ class DashboardViewModelTest {
         val simResult = viewModel.simulationResult.value
         assertNotNull(simResult)
         assertEquals(83.3, simResult!!.simulatedPercentage, 0.1)
+    }
+
+    @Test
+    fun testTodayClassesAndToggling() = runTest {
+        // 1. Setup active semester, subjects and schedules
+        semesterRepo.insertVersion(SemesterVersion(id = 5L, name = "V1", isActive = true))
+        val subjId = subjectRepo.insertSubject(Subject(id = 10L, name = "SE"))
+        
+        // Find current day enum
+        val currentDay = LocalDate.now().dayOfWeek
+        val dayEnum = when (currentDay) {
+            java.time.DayOfWeek.MONDAY -> WeekDay.Monday
+            java.time.DayOfWeek.TUESDAY -> WeekDay.Tuesday
+            java.time.DayOfWeek.WEDNESDAY -> WeekDay.Wednesday
+            java.time.DayOfWeek.THURSDAY -> WeekDay.Thursday
+            java.time.DayOfWeek.FRIDAY -> WeekDay.Friday
+            java.time.DayOfWeek.SATURDAY -> WeekDay.Saturday
+            java.time.DayOfWeek.SUNDAY -> WeekDay.Sunday
+        }
+
+        val schedId = scheduleRepo.insertSchedule(
+            Schedule(
+                id = 20L,
+                subjectId = subjId,
+                dayOfWeek = dayEnum,
+                startTime = LocalTime.of(10, 0),
+                endTime = LocalTime.of(11, 0),
+                versionId = 5L
+            )
+        )
+        advanceUntilIdle()
+
+        // 2. Verify todayClasses contains the scheduled item and is initially unmarked
+        val classes = viewModel.todayClasses.value
+        assertEquals(1, classes.size)
+        val item = classes.first()
+        assertEquals(20L, item.scheduleId)
+        assertEquals(10L, item.subjectId)
+        assertEquals("SE", item.subjectName)
+        assertEquals(null, item.attendance)
+
+        // 3. Mark class as PRESENT
+        viewModel.onAttendanceStatusClick(item, AttendanceStatus.PRESENT)
+        advanceUntilIdle()
+        val markedItem = viewModel.todayClasses.value.first()
+        assertNotNull(markedItem.attendance)
+        assertEquals(AttendanceStatus.PRESENT, markedItem.attendance!!.status)
+
+        // 4. Toggle Present to ABSENT
+        viewModel.onAttendanceStatusClick(markedItem, AttendanceStatus.ABSENT)
+        advanceUntilIdle()
+        val changedItem = viewModel.todayClasses.value.first()
+        assertNotNull(changedItem.attendance)
+        assertEquals(AttendanceStatus.ABSENT, changedItem.attendance!!.status)
+
+        // 5. Click ABSENT again to clear selection (delete attendance)
+        viewModel.onAttendanceStatusClick(changedItem, AttendanceStatus.ABSENT)
+        advanceUntilIdle()
+        val clearedItem = viewModel.todayClasses.value.first()
+        assertEquals(null, clearedItem.attendance)
     }
 }

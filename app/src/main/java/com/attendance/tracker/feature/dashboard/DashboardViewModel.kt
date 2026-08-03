@@ -20,6 +20,9 @@ import com.attendance.tracker.domain.usecase.attendance.CalculateAttendanceStati
 import com.attendance.tracker.domain.usecase.attendance.GetTodayAttendanceUseCase
 import com.attendance.tracker.domain.usecase.planner.AttendanceSimulatorUseCase
 import com.attendance.tracker.domain.usecase.planner.LeavePlannerUseCase
+import com.attendance.tracker.domain.usecase.attendance.MarkAttendanceUseCase
+import com.attendance.tracker.domain.usecase.attendance.UpdateAttendanceUseCase
+import com.attendance.tracker.domain.usecase.attendance.DeleteAttendanceUseCase
 import com.attendance.tracker.feature.attendance.TodayScheduleItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,7 +58,10 @@ class DashboardViewModel @Inject constructor(
     private val calculateStatisticsUseCase: CalculateAttendanceStatisticsUseCase,
     private val getTodayAttendanceUseCase: GetTodayAttendanceUseCase,
     private val attendanceSimulatorUseCase: AttendanceSimulatorUseCase,
-    private val leavePlannerUseCase: LeavePlannerUseCase
+    private val leavePlannerUseCase: LeavePlannerUseCase,
+    private val markAttendanceUseCase: MarkAttendanceUseCase,
+    private val updateAttendanceUseCase: UpdateAttendanceUseCase,
+    private val deleteAttendanceUseCase: DeleteAttendanceUseCase
 ) : ViewModel() {
 
     private val _filter = MutableStateFlow(DashboardFilter.Overall)
@@ -94,6 +100,84 @@ class DashboardViewModel @Inject constructor(
                     scheduleRepository.observeSchedulesForVersion(active.id).collect { list ->
                         _schedulesMap.value = list.associateBy { it.id }
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * Today's classes state flow mapped with recorded attendance status.
+     */
+    val todayClasses: StateFlow<List<TodayScheduleItem>> = combine(
+        _activeVersion,
+        _schedulesMap,
+        getTodayAttendanceUseCase(),
+        _subjectsMap
+    ) { activeVer, schedules, todayAttendance, subjects ->
+        if (activeVer == null) return@combine emptyList()
+
+        val currentDay = LocalDate.now().dayOfWeek
+        val dayEnum = when (currentDay) {
+            java.time.DayOfWeek.MONDAY -> WeekDay.Monday
+            java.time.DayOfWeek.TUESDAY -> WeekDay.Tuesday
+            java.time.DayOfWeek.WEDNESDAY -> WeekDay.Wednesday
+            java.time.DayOfWeek.THURSDAY -> WeekDay.Thursday
+            java.time.DayOfWeek.FRIDAY -> WeekDay.Friday
+            java.time.DayOfWeek.SATURDAY -> WeekDay.Saturday
+            java.time.DayOfWeek.SUNDAY -> WeekDay.Sunday
+        }
+
+        schedules.values
+            .filter { it.dayOfWeek == dayEnum }
+            .sortedBy { it.startTime }
+            .map { schedule ->
+                val subject = subjects[schedule.subjectId]
+                val attendance = todayAttendance.find { it.scheduleId == schedule.id }
+                val formatter = DateTimeFormatter.ofPattern("HH:mm")
+                TodayScheduleItem(
+                    scheduleId = schedule.id,
+                    subjectId = schedule.subjectId,
+                    subjectName = subject?.name ?: "Unknown Subject",
+                    subjectColor = subject?.color ?: 0xFF9E9E9E.toInt(),
+                    startTime = schedule.startTime.format(formatter),
+                    endTime = schedule.endTime.format(formatter),
+                    room = schedule.room,
+                    faculty = schedule.teacherOverride ?: subject?.facultyName,
+                    attendance = attendance
+                )
+            }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = emptyList()
+    )
+
+    /**
+     * Handles immediate attendance state toggling for a today schedule class item.
+     */
+    fun onAttendanceStatusClick(item: TodayScheduleItem, newStatus: AttendanceStatus) {
+        viewModelScope.launch {
+            val existing = item.attendance
+            if (existing == null) {
+                // Not marked -> insert new attendance
+                val record = Attendance(
+                    subjectId = item.subjectId,
+                    scheduleId = item.scheduleId,
+                    date = LocalDate.now(),
+                    status = newStatus
+                )
+                markAttendanceUseCase(record)
+            } else {
+                if (existing.status == newStatus) {
+                    // Clicked again -> toggle off (delete) to return to unselected
+                    deleteAttendanceUseCase(existing)
+                } else {
+                    // Change status -> update attendance
+                    val updated = existing.copy(
+                        status = newStatus,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    updateAttendanceUseCase(updated)
                 }
             }
         }
