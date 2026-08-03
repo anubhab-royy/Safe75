@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +34,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +62,8 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val activeTheme by viewModel.themeState.collectAsState()
+    val currentGoal by viewModel.attendanceGoal.collectAsState()
+    var showGoalDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -142,6 +148,55 @@ fun SettingsScreen(
                         )
                     }
                 }
+            }
+
+            // Attendance Goal settings card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showGoalDialog = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(Dimensions.SpacingMedium),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = Dimensions.SpacingMedium)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Attendance Goal",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                        val goalText = if (currentGoal in listOf(75.0, 80.0, 85.0, 90.0, 95.0)) {
+                            "${currentGoal.toInt()}%"
+                        } else {
+                            "Custom (${currentGoal.toInt()}%)"
+                        }
+                        Text(
+                            text = "Current Goal: $goalText. Tap to configure.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
+
+            if (showGoalDialog) {
+                AttendanceGoalDialog(
+                    currentGoal = currentGoal,
+                    onDismiss = { showGoalDialog = false },
+                    onConfirm = { newGoal ->
+                        viewModel.setAttendanceGoal(newGoal)
+                    }
+                )
             }
 
             // Data Management section (Phase 7)
@@ -270,4 +325,113 @@ private fun ThemeOptionRow(
         Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
     }
+}
+
+@Composable
+private fun AttendanceGoalDialog(
+    currentGoal: Double,
+    onDismiss: () -> Unit,
+    onConfirm: (Double) -> Unit
+) {
+    val options = listOf(75.0, 80.0, 85.0, 90.0, 95.0)
+    var selectedOption by remember {
+        mutableStateOf(
+            if (options.contains(currentGoal)) currentGoal else -1.0
+        )
+    }
+    var customInput by remember {
+        mutableStateOf(
+            if (selectedOption == -1.0) currentGoal.toInt().toString() else ""
+        )
+    }
+    var isInputError by remember { mutableStateOf(false) }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Set Attendance Goal") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                options.forEach { opt ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selectedOption = opt
+                                isInputError = false
+                            }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedOption == opt,
+                            onClick = {
+                                selectedOption = opt
+                                isInputError = false
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("${opt.toInt()}%")
+                    }
+                }
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { selectedOption = -1.0 }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = selectedOption == -1.0,
+                        onClick = { selectedOption = -1.0 }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Custom")
+                }
+
+                if (selectedOption == -1.0) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = customInput,
+                        onValueChange = {
+                            customInput = it
+                            val value = it.toIntOrNull()
+                            isInputError = value == null || value !in 50..100
+                        },
+                        label = { Text("Custom Goal (%)") },
+                        isError = isInputError,
+                        supportingText = {
+                            if (isInputError) {
+                                Text("Enter a percentage between 50 and 100")
+                            }
+                        },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                        ),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.Button(
+                onClick = {
+                    val finalGoal = if (selectedOption != -1.0) {
+                        selectedOption
+                    } else {
+                        customInput.toDoubleOrNull() ?: 75.0
+                    }
+                    onConfirm(finalGoal)
+                    onDismiss()
+                },
+                enabled = selectedOption != -1.0 || (!isInputError && customInput.isNotBlank())
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

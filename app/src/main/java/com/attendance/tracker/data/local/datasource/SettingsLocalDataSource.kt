@@ -26,6 +26,9 @@ interface SettingsLocalDataSource {
 
     fun isMissedReminderEnabled(): Flow<Boolean>
     suspend fun setMissedReminderEnabled(enabled: Boolean)
+
+    fun getAttendanceGoal(): Flow<Double>
+    suspend fun setAttendanceGoal(goal: Double)
 }
 
 /**
@@ -48,4 +51,7 @@ class SettingsLocalDataSourceImpl @Inject constructor(
     override suspend fun setAttendanceReminderEnabled(enabled: Boolean) = settingsPreferences.setAttendanceReminderEnabled(enabled)
     override fun isMissedReminderEnabled(): Flow<Boolean> = settingsPreferences.missedReminderFlow
     override suspend fun setMissedReminderEnabled(enabled: Boolean) = settingsPreferences.setMissedReminderEnabled(enabled)
+
+    override fun getAttendanceGoal(): Flow<Double> = settingsPreferences.attendanceGoalFlow
+    override suspend fun setAttendanceGoal(goal: Double) = settingsPreferences.setAttendanceGoal(goal)
 }

@@ -7,6 +7,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
+import com.attendance.tracker.core.model.AttendanceTarget
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -63,10 +65,18 @@ class SettingsViewModel @Inject constructor(
         )
 
     val missedReminderState: StateFlow<Boolean> = settingsRepository.isMissedReminderEnabled()
+         .stateIn(
+             scope = viewModelScope,
+             started = SharingStarted.WhileSubscribed(5000),
+             initialValue = true
+         )
+
+    val attendanceGoal: StateFlow<Double> = settingsRepository.getAttendanceTarget()
+        .map { it.personalGoal }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = true
+            initialValue = 75.0
         )
 
     fun setThemeMode(themeMode: String) {
@@ -102,6 +112,12 @@ class SettingsViewModel @Inject constructor(
     fun setMissedReminderEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setMissedReminderEnabled(enabled)
+        }
+    }
+
+    fun setAttendanceGoal(goal: Double) {
+        viewModelScope.launch {
+            settingsRepository.updateAttendanceTarget(AttendanceTarget(goal, goal))
         }
     }
 }

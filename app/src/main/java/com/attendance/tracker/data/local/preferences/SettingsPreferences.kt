@@ -112,4 +112,14 @@ class SettingsPreferences @Inject constructor(
             preferences[KEY_MISSED_REMINDER] = enabled
         }
     }
+
+    val attendanceGoalFlow: Flow<Double> = dataStore.data.map { preferences ->
+        preferences[KEY_PERSONAL_GOAL_ATTENDANCE]?.toDoubleOrNull() ?: 75.0
+    }
+
+    suspend fun setAttendanceGoal(goal: Double) {
+        dataStore.edit { preferences ->
+            preferences[KEY_PERSONAL_GOAL_ATTENDANCE] = goal.toString()
+        }
+    }
 }

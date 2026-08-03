@@ -5,6 +5,7 @@ import com.attendance.tracker.data.local.datasource.SettingsLocalDataSource
 import com.attendance.tracker.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 /**
@@ -33,11 +34,13 @@ class SettingsRepositoryImpl @Inject constructor(
     }
 
     override fun getAttendanceTarget(): Flow<AttendanceTarget> {
-        return flowOf(AttendanceTarget(75.0, 85.0))
+        return localDataSource.getAttendanceGoal().map { goal ->
+            AttendanceTarget(goal, goal)
+        }
     }
 
     override suspend fun updateAttendanceTarget(target: AttendanceTarget) {
-        // ad-hoc implementation
+        localDataSource.setAttendanceGoal(target.personalGoal)
     }
 
     // Reminders

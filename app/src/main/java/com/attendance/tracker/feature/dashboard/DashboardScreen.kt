@@ -19,19 +19,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import com.attendance.tracker.core.model.AttendanceStatus
 import java.time.LocalTime
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -64,11 +69,10 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val activeVersion by viewModel.activeVersion.collectAsState()
-    val filterScope by viewModel.filter.collectAsState()
     val dashboardStats by viewModel.dashboardStats.collectAsState()
     val subjectStatsList by viewModel.subjectStatsList.collectAsState()
-    val upcomingClass by viewModel.upcomingClass.collectAsState()
     val todayClasses by viewModel.todayClasses.collectAsState()
+    val goal by viewModel.attendanceGoal.collectAsState()
 
     val pendingCount = todayClasses.count { it.attendance == null }
 
@@ -80,149 +84,122 @@ fun DashboardScreen(
             )
         }
     ) { paddingValues ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(paddingValues)
+                .padding(paddingValues),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                start = Dimensions.SpacingMedium,
+                end = Dimensions.SpacingMedium,
+                top = Dimensions.SpacingMedium,
+                bottom = Dimensions.SpacingLarge
+            ),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
         ) {
-            // Filter chip selector row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Dimensions.SpacingMedium, vertical = Dimensions.SpacingSmall),
-                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)
-            ) {
-                DashboardFilter.values().forEach { filterVal ->
-                    FilterChip(
-                        selected = filterScope == filterVal,
-                        onClick = { viewModel.onFilterScopeChange(filterVal) },
-                        label = { Text(filterVal.name) }
-                    )
+            // 1. Section: Overall Stats
+            item {
+                Text(
+                    text = "Overall Stats",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+            dashboardStats?.let { stats ->
+                item {
+                    OverallStatisticsCard(stats = stats, goal = goal)
                 }
             }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    start = Dimensions.SpacingMedium,
-                    end = Dimensions.SpacingMedium,
-                    bottom = Dimensions.SpacingLarge
-                ),
-                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
-            ) {
-                // 1. Pending Attendance Reminder
-                if (pendingCount > 0) {
-                    item {
-                        PendingAttendanceReminderCard(count = pendingCount)
-                    }
-                }
-
-                // 2. Today's Classes Header
+            // 2. Section: Mark Your Attendance
+            item {
+                Text(
+                    text = "Mark Your Attendance",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+            if (pendingCount > 0) {
                 item {
-                    Text(
-                        text = "Today's Classes",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+                    PendingAttendanceReminderCard(count = pendingCount)
                 }
-
-                // 3. Today's Classes List (Empty State or Cards)
-                if (todayClasses.isEmpty()) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = Dimensions.SpacingLarge),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "No classes scheduled today.",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    items(todayClasses, key = { it.scheduleId }) { item ->
-                        TodayClassCard(
-                            item = item,
-                            onStatusClick = { newStatus ->
-                                viewModel.onAttendanceStatusClick(item, newStatus)
-                            }
-                        )
-                    }
-                }
-
-                // 4. Section Header: Attendance Summary
+            }
+            if (todayClasses.isEmpty()) {
                 item {
-                    Text(
-                        text = "Attendance Summary",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-
-                // 5. Overall Statistics Card
-                dashboardStats?.let { stats ->
-                    item {
-                        OverallStatisticsCard(stats = stats)
-                    }
-                }
-
-                // 6. Upcoming Class Alert Card
-                upcomingClass?.let { item ->
-                    item {
-                        UpcomingClassCard(item = item)
-                    }
-                }
-
-                // 7. Quick Actions Card
-                item {
-                    QuickActionsCard(
-                        onHistoryClick = onNavigateToAttendanceHistory,
-                        onSimulatorClick = onNavigateToSimulator,
-                        onPlannerClick = onNavigateToLeavePlanner
-                    )
-                }
-
-                // 8. Section Header: Subjects
-                item {
-                    Text(
-                        text = "Subject-wise Analytics",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-
-                // 9. Subject Summary cards list
-                if (subjectStatsList.isEmpty()) {
-                    item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = Dimensions.SpacingLarge),
                             contentAlignment = Alignment.Center
                         ) {
-                            EmptyState(
-                                message = "No subjects logged yet",
-                                description = "Navigate to the Subjects tab to record your modules."
+                            Text(
+                                text = "No classes scheduled today.",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                } else {
-                    items(subjectStatsList, key = { it.subjectId }) { subjectStats ->
-                        SubjectStatisticsCard(stats = subjectStats)
+                }
+            } else {
+                items(todayClasses, key = { it.scheduleId }) { item ->
+                    TodayClassCard(
+                        item = item,
+                        onStatusClick = { newStatus ->
+                            viewModel.onAttendanceStatusClick(item, newStatus)
+                        }
+                    )
+                }
+            }
+
+            // 3. Section: Subject-wise Stats
+            item {
+                Text(
+                    text = "Subject-wise Stats",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+            if (subjectStatsList.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = Dimensions.SpacingLarge),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        EmptyState(
+                            message = "No subjects logged yet",
+                            description = "Navigate to the Subjects tab to record your modules."
+                        )
                     }
                 }
+            } else {
+                items(subjectStatsList, key = { it.subjectId }) { subjectStats ->
+                    SubjectStatisticsCard(stats = subjectStats, goal = goal)
+                }
+            }
+
+            // 4. Section: Quick Actions
+            item {
+                Text(
+                    text = "Quick Actions",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+            item {
+                QuickActionsCard(
+                    onHistoryClick = onNavigateToAttendanceHistory,
+                    onSimulatorClick = onNavigateToSimulator,
+                    onPlannerClick = onNavigateToLeavePlanner
+                )
             }
         }
     }
@@ -459,11 +436,16 @@ private fun AttendanceButton(
 }
 
 @Composable
-private fun OverallStatisticsCard(stats: DashboardStatistics) {
-    val statusColor = when (stats.safetyStatus) {
-        "SAFE" -> Color(0xFF2E7D32)      // Green
-        "WARNING" -> Color(0xFFFFA000)   // Amber
-        else -> Color(0xFFC62828)        // Red
+private fun OverallStatisticsCard(stats: DashboardStatistics, goal: Double) {
+    val statusColor = when (stats.safetyStatus.uppercase(Locale.ROOT)) {
+        "GOOD" -> Color(0xFF2E7D32)
+        "WARNING" -> Color(0xFFFFA000)
+        else -> Color(0xFFC62828)
+    }
+    val statusText = when (stats.safetyStatus.uppercase(Locale.ROOT)) {
+        "GOOD" -> "Good"
+        "WARNING" -> "Warning"
+        else -> "Critical"
     }
 
     ElevatedCard(
@@ -489,27 +471,35 @@ private fun OverallStatisticsCard(stats: DashboardStatistics) {
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = String.format(Locale.getDefault(), "%.1f%%", stats.overallPercentage),
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 38.sp
+                            ),
+                            color = statusColor
+                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .border(1.dp, statusColor, RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = statusText,
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                color = statusColor
+                            )
+                        }
+                    }
                     Text(
-                        text = String.format(Locale.getDefault(), "%.1f%%", stats.overallPercentage),
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 38.sp
-                        ),
-                        color = statusColor
-                    )
-                }
-
-                // Safety Status Badge
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(statusColor.copy(alpha = 0.2f))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = stats.safetyStatus,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = statusColor
+                        text = "Goal: ${goal.toInt()}%",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
                 }
             }
@@ -543,7 +533,7 @@ private fun OverallStatisticsCard(stats: DashboardStatistics) {
                     )
                 } else if (stats.classesNeeded > 0) {
                     Text(
-                        text = "Attend next ${stats.classesNeeded} classes to reach 85% goal",
+                        text = "Attend next ${stats.classesNeeded} classes to reach ${goal.toInt()}% goal",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color(0xFFFFA000)
                     )
@@ -581,87 +571,74 @@ private fun QuickActionsCard(
     onSimulatorClick: () -> Unit,
     onPlannerClick: () -> Unit
 ) {
-    Card(
+    Row(
         modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        QuickActionButton(
+            icon = Icons.Default.List,
+            label = "Logs History",
+            onClick = onHistoryClick,
+            modifier = Modifier.weight(1f)
+        )
+        QuickActionButton(
+            icon = Icons.Default.PlayArrow,
+            label = "Simulator",
+            onClick = onSimulatorClick,
+            modifier = Modifier.weight(1f)
+        )
+        QuickActionButton(
+            icon = Icons.Default.DateRange,
+            label = "Leave Planner",
+            onClick = onPlannerClick,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun QuickActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimensions.SpacingMedium)
-        ) {
-            Text(
-                text = "Quick Actions",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-            )
-            Spacer(modifier = Modifier.height(Dimensions.SpacingSmall))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)
-            ) {
-                OutlinedButton(onClick = onHistoryClick, modifier = Modifier.weight(1f)) {
-                    Text("Logs History", fontSize = 11.sp)
-                }
-                OutlinedButton(onClick = onSimulatorClick, modifier = Modifier.weight(1f)) {
-                    Text("Simulator", fontSize = 11.sp)
-                }
-                OutlinedButton(onClick = onPlannerClick, modifier = Modifier.weight(1f)) {
-                    Text("Leave Planner", fontSize = 11.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun UpcomingClassCard(item: TodayScheduleItem) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Dimensions.SpacingMedium),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(vertical = 12.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.size(28.dp)
+                imageVector = icon,
+                contentDescription = label,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
             )
-            Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Upcoming Class",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.secondary
-                )
-                Text(
-                    text = item.subjectName,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-                Text(
-                    text = "${item.startTime} - ${item.endTime} (Room: ${item.room ?: "N/A"})",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 11.sp
+            )
         }
     }
 }
 
 @Composable
-private fun SubjectStatisticsCard(stats: SubjectStatistics) {
-    val statusColor = when (stats.safetyStatus) {
-        "SAFE" -> Color(0xFF2E7D32)
+private fun SubjectStatisticsCard(stats: SubjectStatistics, goal: Double) {
+    val statusColor = when (stats.safetyStatus.uppercase(Locale.ROOT)) {
+        "GOOD" -> Color(0xFF2E7D32)
         "WARNING" -> Color(0xFFFFA000)
         else -> Color(0xFFC62828)
     }
@@ -670,109 +647,82 @@ private fun SubjectStatisticsCard(stats: SubjectStatistics) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
         )
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
-            // Subject color tag
-            Box(
-                modifier = Modifier
-                    .width(6.dp)
-                    .fillMaxHeight()
-                    .background(Color(stats.subjectColor))
-            )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(Dimensions.SpacingMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Text(
+                    text = stats.subjectName,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                if (stats.totalClasses == 0) {
                     Text(
-                        text = stats.subjectName,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    // Safety badge
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(statusColor.copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = stats.safetyStatus,
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                            color = statusColor
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = String.format(Locale.getDefault(), "%.1f%% (%d/%d classes)", stats.percentage, stats.presentCount, stats.totalClasses),
+                        text = "No attendance yet",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = statusColor
-                    )
-                    Text(
-                        text = "Goal: ${stats.personalGoalPercentage}% (Req: ${stats.requiredPercentage}%)",
-                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
+                } else {
+                    Text(
+                        text = String.format(Locale.getDefault(), "%.1f%%", stats.percentage),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = statusColor
+                    )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-                // Bunk guidance metrics
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    if (stats.safeMissCount > 0) {
-                        Text(
-                            text = "Bunks left: ${stats.safeMissCount}",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFF2E7D32)
-                        )
-                    } else {
-                        Text(
-                            text = "Bunks left: 0",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF757575)
-                        )
-                    }
+            // Progress indicator
+            val progress = if (stats.totalClasses > 0) (stats.percentage / 100.0).toFloat() else 0f
+            LinearProgressIndicator(
+                progress = progress,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = statusColor,
+                trackColor = statusColor.copy(alpha = 0.2f)
+            )
 
-                    if (stats.classesNeeded > 0) {
-                        Text(
-                            text = "Needed: ${stats.classesNeeded}",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFFFFA000)
-                        )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Goal: ${goal.toInt()}%",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+
+                if (stats.totalClasses > 0) {
+                    val message = if (stats.safeMissCount > 0) {
+                        "Bunks left: ${stats.safeMissCount}"
+                    } else if (stats.classesNeeded > 0) {
+                        "Need: ${stats.classesNeeded}"
                     } else if (stats.classesNeeded == -1) {
-                        Text(
-                            text = "Goal unreachable",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFC62828)
-                        )
+                        "Goal unreachable"
                     } else {
-                        Text(
-                            text = "Goal reached",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF2E7D32)
-                        )
+                        "Goal reached"
                     }
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                        color = if (stats.safeMissCount > 0) Color(0xFF2E7D32) else if (stats.classesNeeded > 0) Color(0xFFFFA000) else Color(0xFFC62828)
+                    )
                 }
             }
         }

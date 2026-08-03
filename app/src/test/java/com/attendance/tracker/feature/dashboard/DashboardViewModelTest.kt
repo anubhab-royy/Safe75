@@ -59,6 +59,31 @@ class LocalFakeSemesterRepository : com.attendance.tracker.domain.repository.Sem
     }
 }
 
+class FakeSettingsRepository : com.attendance.tracker.domain.repository.SettingsRepository {
+    private val _theme = MutableStateFlow("SYSTEM")
+    private val _notifications = MutableStateFlow(true)
+    private val _lastBackup = MutableStateFlow(0L)
+    private val _target = MutableStateFlow(com.attendance.tracker.core.model.AttendanceTarget(75.0, 75.0))
+    private val _morning = MutableStateFlow(true)
+    private val _attendance = MutableStateFlow(true)
+    private val _missed = MutableStateFlow(true)
+
+    override fun getThemeMode(): Flow<String> = _theme
+    override suspend fun setThemeMode(themeMode: String) { _theme.value = themeMode }
+    override fun isNotificationsEnabled(): Flow<Boolean> = _notifications
+    override suspend fun setNotificationsEnabled(enabled: Boolean) { _notifications.value = enabled }
+    override fun getLastBackupTimestamp(): Flow<Long> = _lastBackup
+    override suspend fun setLastBackupTimestamp(timestamp: Long) { _lastBackup.value = timestamp }
+    override fun getAttendanceTarget(): Flow<com.attendance.tracker.core.model.AttendanceTarget> = _target
+    override suspend fun updateAttendanceTarget(target: com.attendance.tracker.core.model.AttendanceTarget) { _target.value = target }
+    override fun isMorningReminderEnabled(): Flow<Boolean> = _morning
+    override suspend fun setMorningReminderEnabled(enabled: Boolean) { _morning.value = enabled }
+    override fun isAttendanceReminderEnabled(): Flow<Boolean> = _attendance
+    override suspend fun setAttendanceReminderEnabled(enabled: Boolean) { _attendance.value = enabled }
+    override fun isMissedReminderEnabled(): Flow<Boolean> = _missed
+    override suspend fun setMissedReminderEnabled(enabled: Boolean) { _missed.value = enabled }
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
 
@@ -68,6 +93,7 @@ class DashboardViewModelTest {
     private lateinit var subjectRepo: LocalFakeSubjectRepository
     private lateinit var scheduleRepo: LocalFakeScheduleRepository
     private lateinit var semesterRepo: LocalFakeSemesterRepository
+    private lateinit var settingsRepo: FakeSettingsRepository
 
     private lateinit var viewModel: DashboardViewModel
 
@@ -79,6 +105,7 @@ class DashboardViewModelTest {
         subjectRepo = LocalFakeSubjectRepository()
         scheduleRepo = LocalFakeScheduleRepository()
         semesterRepo = LocalFakeSemesterRepository()
+        settingsRepo = FakeSettingsRepository()
 
         val calculateStats = CalculateAttendanceStatisticsUseCase()
         val getTodayAttendance = GetTodayAttendanceUseCase(attendanceRepo)
@@ -100,7 +127,8 @@ class DashboardViewModelTest {
             leavePlannerUseCase = leavePlanner,
             markAttendanceUseCase = markAttendance,
             updateAttendanceUseCase = updateAttendance,
-            deleteAttendanceUseCase = deleteAttendance
+            deleteAttendanceUseCase = deleteAttendance,
+            settingsRepository = settingsRepo
         )
     }
 
@@ -110,28 +138,30 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun testInitialFilterScope_isOverall() = runTest {
-        assertEquals(DashboardFilter.Overall, viewModel.filter.value)
-    }
-
-    @Test
-    fun testFilterScopeChange_filtersLogsCorrectly() = runTest {
+    fun testAttendanceGoalChange_recalculatesAnalytics() = runTest {
         advanceUntilIdle()
+        // Default goal: 75.0%
+        assertEquals(75.0, viewModel.attendanceGoal.value, 0.0)
 
-        // Log one today record, and one yesterday record
+        // Add subjects and schedules
         val subjId = subjectRepo.insertSubject(Subject(id = 1L, name = "SE"))
+        // Mark 4 present, 0 absent (100%)
         attendanceRepo.insertAttendance(Attendance(id = 1L, subjectId = subjId, scheduleId = 10L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
-        attendanceRepo.insertAttendance(Attendance(id = 2L, subjectId = subjId, scheduleId = 10L, date = LocalDate.now().minusDays(5), status = AttendanceStatus.ABSENT))
+        attendanceRepo.insertAttendance(Attendance(id = 2L, subjectId = subjId, scheduleId = 10L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
+        attendanceRepo.insertAttendance(Attendance(id = 3L, subjectId = subjId, scheduleId = 10L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
+        attendanceRepo.insertAttendance(Attendance(id = 4L, subjectId = subjId, scheduleId = 10L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
         advanceUntilIdle()
 
-        // Default: Overall (both records)
-        assertEquals(2, viewModel.filteredHistory.value.size)
+        // With 75% goal, safety status should be GOOD
+        assertEquals(100.0, viewModel.dashboardStats.value!!.overallPercentage, 0.1)
+        assertEquals("GOOD", viewModel.dashboardStats.value!!.safetyStatus)
 
-        // Switch filter: Today
-        viewModel.onFilterScopeChange(DashboardFilter.Today)
+        // Now change target goal to 90%
+        settingsRepo.updateAttendanceTarget(com.attendance.tracker.core.model.AttendanceTarget(90.0, 90.0))
         advanceUntilIdle()
-        assertEquals(1, viewModel.filteredHistory.value.size)
-        assertEquals(LocalDate.now(), viewModel.filteredHistory.value.first().date)
+
+        // With 90% goal and 100% attendance, they can't miss any class, so safety status becomes WARNING
+        assertEquals("WARNING", viewModel.dashboardStats.value!!.safetyStatus)
     }
 
     @Test

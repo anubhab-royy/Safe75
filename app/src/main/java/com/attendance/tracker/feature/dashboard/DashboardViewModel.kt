@@ -30,21 +30,15 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import com.attendance.tracker.domain.repository.SettingsRepository
 
-/**
- * Filter scopes for the Intelligent Dashboard.
- */
-enum class DashboardFilter {
-    Today,
-    ThisWeek,
-    Overall
-}
 
 /**
  * ViewModel acting as the intelligence hub for analytics, simulator runs, and leaves.
@@ -61,11 +55,17 @@ class DashboardViewModel @Inject constructor(
     private val leavePlannerUseCase: LeavePlannerUseCase,
     private val markAttendanceUseCase: MarkAttendanceUseCase,
     private val updateAttendanceUseCase: UpdateAttendanceUseCase,
-    private val deleteAttendanceUseCase: DeleteAttendanceUseCase
+    private val deleteAttendanceUseCase: DeleteAttendanceUseCase,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
-    private val _filter = MutableStateFlow(DashboardFilter.Overall)
-    val filter = _filter.asStateFlow()
+    val attendanceGoal: StateFlow<Double> = settingsRepository.getAttendanceTarget()
+        .map { it.personalGoal }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = 75.0
+        )
 
     private val _subjectsMap = MutableStateFlow<Map<Long, Subject>>(emptyMap())
     val subjectsMap = _subjectsMap.asStateFlow()
@@ -184,43 +184,29 @@ class DashboardViewModel @Inject constructor(
     }
 
     /**
-     * Filtered attendance history logs based on Today, This Week, or Overall.
+     * Attendance history logs.
      */
-    val filteredHistory: StateFlow<List<Attendance>> = combine(
-        attendanceRepository.observeAttendanceHistory(),
-        _filter
-    ) { raw, filterScope ->
-        when (filterScope) {
-            DashboardFilter.Today -> {
-                val today = LocalDate.now()
-                raw.filter { it.date == today }
-            }
-            DashboardFilter.ThisWeek -> {
-                val today = LocalDate.now()
-                val monday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
-                val sunday = today.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY))
-                raw.filter { it.date >= monday && it.date <= sunday }
-            }
-            DashboardFilter.Overall -> raw
-        }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.Eagerly,
-        initialValue = emptyList()
-    )
+    val filteredHistory: StateFlow<List<Attendance>> = attendanceRepository.observeAttendanceHistory()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = emptyList()
+        )
 
     /**
      * Dashboard statistics.
      */
     val dashboardStats: StateFlow<DashboardStatistics?> = combine(
         filteredHistory,
-        _subjectsMap
-    ) { history, _ ->
-        val stats = calculateStatisticsUseCase(history, 75, 85)
+        _subjectsMap,
+        attendanceGoal
+    ) { history, _, goal ->
+        val gInt = goal.toInt()
+        val stats = calculateStatisticsUseCase(history, gInt, gInt)
         val status = when {
-            stats.attendancePercentage < 75.0 -> "CRITICAL"
+            stats.attendancePercentage < goal -> "CRITICAL"
             stats.remainingSafeClasses == 0 -> "WARNING"
-            else -> "SAFE"
+            else -> "GOOD"
         }
         DashboardStatistics(
             overallPercentage = stats.attendancePercentage,
@@ -243,19 +229,21 @@ class DashboardViewModel @Inject constructor(
      */
     val subjectStatsList: StateFlow<List<SubjectStatistics>> = combine(
         filteredHistory,
-        _subjectsMap
-    ) { history, subjects ->
+        _subjectsMap,
+        attendanceGoal
+    ) { history, subjects, goal ->
+        val gInt = goal.toInt()
         subjects.values.map { subject ->
             val subjectHistory = history.filter { it.subjectId == subject.id }
             val stats = calculateStatisticsUseCase(
                 subjectHistory,
-                subject.requiredAttendancePercentage,
-                subject.personalAttendanceGoal
+                gInt,
+                gInt
             )
             val status = when {
-                stats.attendancePercentage < subject.requiredAttendancePercentage -> "CRITICAL"
+                stats.attendancePercentage < goal -> "CRITICAL"
                 stats.remainingSafeClasses == 0 -> "WARNING"
-                else -> "SAFE"
+                else -> "GOOD"
             }
             SubjectStatistics(
                 subjectId = subject.id,
@@ -264,8 +252,8 @@ class DashboardViewModel @Inject constructor(
                 presentCount = stats.presentCount,
                 totalClasses = stats.totalClasses,
                 percentage = stats.attendancePercentage,
-                requiredPercentage = subject.requiredAttendancePercentage,
-                personalGoalPercentage = subject.personalAttendanceGoal,
+                requiredPercentage = goal.toInt(),
+                personalGoalPercentage = goal.toInt(),
                 safetyStatus = status,
                 safeMissCount = stats.remainingSafeClasses,
                 classesNeeded = stats.classesNeededToReachGoal
@@ -326,9 +314,6 @@ class DashboardViewModel @Inject constructor(
         initialValue = null
     )
 
-    fun onFilterScopeChange(scope: DashboardFilter) {
-        _filter.value = scope
-    }
 
     // Simulator triggers
     val simulationResult: StateFlow<SimulationResult?> = combine(
