@@ -1,6 +1,6 @@
 # Navigation Document
 
-This document outlines the screen hierarchy, nested navigation controllers, backstack logic, and transition rules for **Attendance Tracker**.
+This document outlines the screen hierarchy, nested navigation controllers, backstack logic, and transition rules for **Safe75**.
 
 ---
 

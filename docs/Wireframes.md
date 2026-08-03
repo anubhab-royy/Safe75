@@ -1,6 +1,6 @@
 # Wireframes Document
 
-This document contains low-fidelity ASCII wireframes for the **Attendance Tracker** screens.
+This document contains low-fidelity ASCII wireframes for the **Safe75** screens.
 
 ---
 
@@ -33,7 +33,7 @@ This document contains low-fidelity ASCII wireframes for the **Attendance Tracke
 
 ```text
 +------------------------------------------+
-|  Welcome to Attendance Tracker           |
+|  Welcome to Safe75           |
 |                                          |
 |  [ Timetable Illustration ]              |
 |                                          |

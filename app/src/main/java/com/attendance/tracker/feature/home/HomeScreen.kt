@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +63,7 @@ fun HomeScreen(
 
     val items = listOf(
         TabItem("Dashboard", Icons.Default.Home, Screen.Dashboard),
-        TabItem("Subjects", Icons.Default.List, Screen.Subjects),
+        TabItem("Subjects", Icons.AutoMirrored.Filled.List, Screen.Subjects),
         TabItem("Schedule", Icons.Default.DateRange, Screen.Schedule),
         TabItem("Settings", Icons.Default.Settings, Screen.Settings)
     )

@@ -1,8 +1,8 @@
-# Attendance Tracker — Privacy Policy
+# Safe75 — Privacy Policy
 
 Effective date: August 2026
 
-**Attendance Tracker** ("the App") is an offline-first attendance tracker for
+**Safe75** ("the App") is an offline-first attendance tracker for
 students. This policy explains what data the App collects and how it is handled.
 
 ## 1. Data collected

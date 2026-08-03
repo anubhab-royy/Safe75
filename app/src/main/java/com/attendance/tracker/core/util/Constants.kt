@@ -14,7 +14,7 @@ object Constants {
     const val REMINDER_NOTIFICATION_ID = 5001
 
     // Backup Configuration
-    const val BACKUP_DIRECTORY_NAME = "AttendanceTrackerBackups"
+    const val BACKUP_DIRECTORY_NAME = "Safe75Backups"
     const val BACKUP_FILE_PREFIX = "backup_attendance_"
     const val BACKUP_FILE_EXTENSION = ".json"
 

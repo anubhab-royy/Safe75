@@ -1,7 +1,7 @@
 # Project Requirements Document (PRD)
 
 ## 1. Project Vision
-**Attendance Tracker** is a robust, offline-first Android application designed to empower college and university students to manage, plan, and analyze their class attendance. By providing predictive simulators, scheduled class alerts, and automated timetable imports via OCR, the app aims to alleviate the stress of meeting strict institutional attendance criteria (e.g., the standard "Safe 75%" threshold) and allow students to plan academic leaves proactively.
+**Safe75** is a robust, offline-first Android application designed to empower college and university students to manage, plan, and analyze their class attendance. By providing predictive simulators, scheduled class alerts, and automated timetable imports via OCR, the app aims to alleviate the stress of meeting strict institutional attendance criteria (e.g., the standard "Safe 75%" threshold) and allow students to plan academic leaves proactively.
 
 ---
 
@@ -23,7 +23,7 @@ Many higher education institutions enforce strict attendance criteria (often 75%
 ---
 
 ## 4. Target Users
-The target users of Attendance Tracker are:
+The target users of Safe75 are:
 | Persona | Profile | Core Pain Point |
 | :--- | :--- | :--- |
 | **University Students** | Manages a busy 5-6 day timetable. Regularly participates in extracurriculars. | Needs to know if they can safely skip a class for events without dropping below 75%. |

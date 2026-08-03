@@ -28,7 +28,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -762,7 +762,7 @@ private fun QuickActionsCard(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         QuickActionButton(
-            icon = Icons.Default.List,
+            icon = Icons.AutoMirrored.Filled.List,
             label = "Logs History",
             onClick = onHistoryClick,
             modifier = Modifier.weight(1f)

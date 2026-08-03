@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -22,7 +23,7 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 /**
- * Single activity entry point for the Attendance Tracker application.
+ * Single activity entry point for the Safe75 application.
  * Annotated with [AndroidEntryPoint] to enable Hilt dependency injection.
  */
 @AndroidEntryPoint
@@ -30,6 +31,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         // Request runtime notification permissions on Android 13+ (Tiramisu)

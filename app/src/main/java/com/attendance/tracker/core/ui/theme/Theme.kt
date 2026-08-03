@@ -11,7 +11,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -61,7 +60,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 /**
- * Custom Material Theme for Attendance Tracker.
+ * Custom Material Theme for Safe75.
  * Integrates dynamic colors on Android 12+ (API 31+) and wraps spacing composition providers.
  */
 @Composable
@@ -84,7 +83,6 @@ fun AttendanceTrackerTheme(
         SideEffect {
             val window = (view.context as? Activity)?.window
             if (window != null) {
-                window.statusBarColor = colorScheme.background.toArgb()
                 WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
             }
         }

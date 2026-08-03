@@ -45,7 +45,7 @@ import dagger.hilt.components.SingletonComponent
 import dagger.hilt.android.EntryPointAccessors
 
 /**
- * Material 3 home screen widget for the Attendance Tracker.
+ * Material 3 home screen widget for the Safe75.
  *
  * Shows today's attendance, the overall attendance percentage, today's class
  * count and the next upcoming class, with quick actions to open the dashboard,

@@ -1,6 +1,6 @@
 # Project Roadmap
 
-This document outlines the multi-phase timeline and release criteria for **Attendance Tracker**.
+This document outlines the multi-phase timeline and release criteria for **Safe75**.
 
 ---
 
@@ -8,7 +8,7 @@ This document outlines the multi-phase timeline and release criteria for **Atten
 
 ```mermaid
 gantt
-    title Attendance Tracker Release Timeline
+    title Safe75 Release Timeline
     dateFormat  YYYY-MM
     section Phase 0-1
     Planning & Architecture   :done, p0, 2026-01, 2026-02

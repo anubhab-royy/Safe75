@@ -1,6 +1,6 @@
 # Database Design Document
 
-This document defines the schema, table attributes, relationships, indexes, cascading rules, and migration strategies for the **Attendance Tracker** Room database.
+This document defines the schema, table attributes, relationships, indexes, cascading rules, and migration strategies for the **Safe75** Room database.
 
 ---
 

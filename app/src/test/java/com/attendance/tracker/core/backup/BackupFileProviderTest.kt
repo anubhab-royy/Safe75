@@ -15,7 +15,7 @@ class BackupFileProviderTest {
     @Test
     fun testCreateDefaultFileName_isTimestampedAndJson() {
         val name = provider.createDefaultFileName(1_700_000_000_000L)
-        assertTrue(name.startsWith("attendance_tracker_backup_"))
+        assertTrue(name.startsWith("safe75_backup_"))
         assertTrue(name.endsWith(".json"))
         assertFalse(name.contains(" "))
     }

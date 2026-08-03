@@ -32,7 +32,7 @@ class MainApplication : Application(), Configuration.Provider {
         TrackerNotificationManager.createNotificationChannelsAsync(this)
 
         // Initialize OpenCV
-        if (org.opencv.android.OpenCVLoader.initDebug()) {
+        if (org.opencv.android.OpenCVLoader.initLocal()) {
             Logger.d("MainApplication", "OpenCV loaded successfully")
         } else {
             Logger.e("MainApplication", "OpenCV initialization failed!")

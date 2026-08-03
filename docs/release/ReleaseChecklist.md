@@ -1,6 +1,6 @@
 # Release Checklist — v1.0.0
 
-Checklist for producing, signing, testing, and publishing the **Attendance Tracker** v1.0.0 release build.
+Checklist for producing, signing, testing, and publishing the **Safe75** v1.0.0 release build.
 
 ---
 

@@ -20,7 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
@@ -147,7 +147,7 @@ fun SubjectsScreen(
 
                 Box {
                     IconButton(onClick = { showSortMenu = true }) {
-                        Icon(Icons.Default.List, contentDescription = "Sort Options")
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Sort Options")
                     }
                     DropdownMenu(
                         expanded = showSortMenu,
@@ -453,7 +453,7 @@ private fun SubjectCardItem(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 LinearProgressIndicator(
-                    progress = (subject.percentage / 100.0).toFloat(),
+                    progress = { (subject.percentage / 100.0).toFloat() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp)

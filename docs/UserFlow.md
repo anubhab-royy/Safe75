@@ -1,6 +1,6 @@
 # User Flow Document
 
-This document outlines the user flows for key operations in **Attendance Tracker**.
+This document outlines the user flows for key operations in **Safe75**.
 
 ---
 

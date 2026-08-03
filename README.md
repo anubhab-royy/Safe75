@@ -1,112 +1,115 @@
-# Attendance Tracker (Safe 75%)
+<p align="center">
+  <img src="assets/branding/safe75_logo1024.png" width="150" alt="Safe75 Logo" />
+</p>
 
-Attendance Tracker is an offline-first Android application designed to help university and college students track, simulate, and plan class attendance to meet institutional compliance thresholds.
+# Safe75 (v1.0.0)
 
----
-
-## Key Features
-
-- **Timetable OCR Import:** Take a photo or screenshot of your weekly timetable to extract subjects, timings, and classrooms locally in seconds.
-- **Predictive Simulator:** Run simulations to see how skipping or attending future classes will affect your attendance percentages.
-- **Leave Planner:** Check the impact of planned leaves on your attendance targets before scheduling time off.
-- **Home-Screen Widget:** See your attendance percentage, today's progress, and the next class at a glance, with quick actions that deep-link into the app.
-- **Smart Reminders:** Morning schedule summary, post-class one-tap Present/Absent/Cancelled notifications, and an end-of-day nudge for unmarked classes.
-- **Full Data Control:** Export/restore JSON backups, archive finished semesters, reset for a new one, and run a data-integrity scan.
-- **M3 Design & Theming:** Custom color schemes that reflect attendance status (Safe, Warning, Critical) with support for Material You dynamic theming.
-- **100% Offline-First:** Operated with zero internet permissions, ensuring complete data ownership and local JSON backups.
+Safe75 is a robust, offline-first Android application designed to help university and college students track, simulate, and plan class attendance to stay compliant with institutional attendance regulations (such as the standard 75% threshold). By combining predictive simulators, daily logs, smart reminder triggers, and local OCR timetable scanning, Safe75 makes managing your schedule simple and stress-free.
 
 ---
 
-## System Architecture
+## 🚀 Key Features
 
-The application is structured using **Clean Architecture** and **MVVM** design patterns to promote modularity and testability.
+*   **Timetable OCR Import:** Instantly scan physical schedule sheets or digital screenshots to automatically populate your weekly schedule.
+*   **Predictive Simulator:** Calculate the mathematical outcome of attending or missing future classes. Always know your theoretical attendance ahead of time.
+*   **Leave Planner:** Model custom leave periods and pre-emptively test their impact on your attendance thresholds before requesting time off.
+*   **Home-Screen Widget:** A Material 3 Glance widget showing your overall percentages, today's schedule progress, next class details, and quick logging actions.
+*   **Automated Productivity Workers:** Background services schedule daily morning summary alerts, end-of-day unmarked logs nudges, and post-class logging actions.
+*   **Semester Lifecycle & Archiving:** Start fresh for new semesters while keeping historical attendance sheets, analytics, and subjects archived safely.
+*   **Offline-First & Privacy-Focused:** Safe75 operates with **zero internet permissions**. All OCR scanning, data storage, and backup files remain local on your device.
+
+---
+
+## 🛠️ Tech Stack
+
+*   **Language:** Kotlin (100%)
+*   **UI:** Jetpack Compose, Material 3, Material You
+*   **Home Screen Widget:** Jetpack Glance
+*   **DI:** Dagger Hilt
+*   **Database:** Room DB
+*   **Preferences:** Preferences DataStore
+*   **Async Processing:** Kotlin Coroutines & Flow
+*   **Background Tasks:** WorkManager
+*   **Computer Vision & OCR:** OpenCV (table cell parsing) + Google ML Kit Text Recognition (on-device)
+*   **Build System:** Gradle Kotlin DSL (with Version Catalog)
+
+---
+
+## 📐 System Architecture
+
+Safe75 is built using **Clean Architecture** combined with **MVVM (Model-View-ViewModel)**. This separates business rules from database mechanisms and UI views.
 
 ```mermaid
 graph TD
-    UI[feature/ UI Layer] -->|ViewStates| Domain[domain/ Business Logic]
-    Data[data/ Database & Prefs] -->|Implementations| Domain
+    UI[Feature UI Layer - Jetpack Compose] -->|Depends on| Domain[Domain Layer - Business Logic]
+    Data[Data Layer - Room & DataStore] -->|Depends on| Domain
+    
+    Domain -.->|Pure Kotlin / Independent| Data
+    Domain -.->|Pure Kotlin / Independent| UI
 ```
 
-- **`domain/`**: isolated core containing Use Cases, Domain Models, and Validators.
-- **`data/`**: Manages data routing. Maps Room entities to Domain Models via specific Mappers.
-- **`feature/`**: Jetpack Compose presentation layer, styled using Material 3 design tokens.
-- **`di/`**: Hilt dependency injection configuration modules.
+*   **`domain/`**: Houses entity models (`Subject`, `Attendance`, `Schedule`), validator rules, and business Use Cases.
+*   **`data/`**: Bridges repositories and storage nodes. Maps Room entity rows to Domain models.
+*   **`feature/`**: Compose views and stateful ViewModels utilizing hoisted M3 design tokens.
+*   **`di/`**: Hilt modules configuring standard Singleton scopes.
 
 ---
 
-## Tech Stack
+## 📸 Timetable OCR Pipeline Overview
 
-- **Language:** Kotlin
-- **UI:** Jetpack Compose, Material 3, Material You
-- **Home Screen Widget:** Jetpack Glance
-- **DI:** Dagger Hilt
-- **Database:** Room
-- **Preferences:** Preferences DataStore
-- **Async:** Kotlin Coroutines & Flow
-- **Background Jobs:** WorkManager
-- **OCR:** Google ML Kit Text Recognition
-- **Build System:** Gradle Kotlin DSL + Version Catalog
+Safe75 contains a hybrid computer vision pipeline to automate schedule configuration:
+
+```mermaid
+graph LR
+    Image[Timetable Image] -->|OpenCV| Prep[Grayscale & Adaptive Thresholding]
+    Prep -->|OpenCV| Grid[Horizontal & Vertical Grid Line Detection]
+    Grid -->|ML Kit| Extract[On-Device Text Block Extraction]
+    Extract -->|Regex Engine| Parse[Course, Timing, and Day Matching]
+    Parse -->|UI Review| DB[(Room Local DB)]
+```
+
+1.  **Image Preprocessing (OpenCV):** Normalizes contrast, applies adaptive threshold filters, and analyzes grid boundaries to separate table cells.
+2.  **On-Device Text Extraction (ML Kit):** Runs local OCR scanning to translate image segments into raw text blocks with spatial coordinates.
+3.  **Regular Expression Mapping:** Detects day markers (e.g., *Mon, Tue*), room codes, and timestamps (e.g., *10:00 AM - 11:30 AM*) to reconstruct class slots.
+4.  **OCR Review & Correction:** Presents parsed timetable structures on a validation UI so users can verify accuracy and make manual corrections before saving.
 
 ---
 
-## Installation & Build Setup
+## ⚙️ Installation & Build Instructions
 
 ### Prerequisites
-- JDK 17 or JDK 21+
-- Android Studio Ladybug (or newer)
-- Android SDK 26 (Min SDK) to Target SDK 36
+*   **JDK 17** or higher
+*   **Android Studio Ladybug** (or newer)
+*   **Android SDK 26** (Minimum SDK) to **Target SDK 36**
 
-### Build Instructions
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/username/Safe75.git
-   ```
-2. Build the project using Gradle:
-   ```bash
-   ./gradlew assembleDebug
-   ```
-3. Run unit tests:
-   ```bash
-   ./gradlew test
-   ```
-4. Build the release APK (signing optional — see `docs/release/ReleaseChecklist.md`):
-   ```bash
-   ./gradlew assembleRelease
-   ```
+### Building from Source
 
-### Baseline Profile (optional)
-The `:benchmark` module can generate an ART baseline profile on a connected
-device/emulator:
-
-```bash
-./gradlew :benchmark:connectedCheck
-```
-
-Copy the generated profile to `app/src/main/baseline-prof.txt` and rebuild the
-release APK. A curated `baseline-prof.txt` is already committed for v1.0.0.
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/username/Safe75.git
+    ```
+2.  **Compile Debug APK:**
+    ```bash
+    ./gradlew assembleDebug
+    ```
+3.  **Run Unit Tests:**
+    ```bash
+    ./gradlew test
+    ```
+4.  **Generate Release APK & AAB:**
+    ```bash
+    ./gradlew assembleRelease bundleRelease
+    ```
+    *Note: Unsigned release artifacts will be located under `app/build/outputs/apk/release/` and `app/build/outputs/bundle/release/` respectively.*
 
 ---
 
-## Development Roadmap
+## 🤝 Contributing
 
-- **Phase 0 + 1:** Planning & Core Architecture (Complete)
-- **Phase 2:** Subject Management (Complete)
-- **Phase 3:** Timetable Management (Complete)
-- **Phase 4:** Attendance Tracking (Complete)
-- **Phase 5:** Attendance Intelligence (Complete)
-- **Phase 6:** Smart Productivity & Automation (Complete)
-- **Phase 7:** Data Management & Semester Lifecycle (Complete)
-- **Phase 8:** Production Release Readiness (Complete) — v1.0.0
-- **Post-1.0.0:** Baseline-profile device run, Play Store closed/open testing, broader QA
+Contributions are welcome! Please review the [CONTRIBUTING.md](CONTRIBUTING.md) guide in the root folder for details on our coding standards, git branching model, and PR validation checklist.
 
 ---
 
-## Contributing
+## 📄 License
 
-We welcome contributions! Please review the [CONTRIBUTING.md](file:///e:/Code&Programs/GitHub/Safe75/docs/CONTRIBUTING.md) guide under the `docs/` folder for information on coding standards, commit styles, and branching workflows.
-
----
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](file:///e:/Code&Programs/GitHub/Safe75/LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

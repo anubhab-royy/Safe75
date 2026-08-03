@@ -17,7 +17,7 @@ class BackupFileProvider @Inject constructor() {
     private val stampFormat: DateTimeFormatter =
         DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
 
-    /** Default backup file prefix, e.g. "attendance_tracker_backup_". */
+    /** Default backup file prefix, e.g. "safe75_backup_". */
     val defaultPrefix: String = DEFAULT_BACKUP_PREFIX
 
     /** Default backup file extension, e.g. ".json". */
@@ -25,7 +25,7 @@ class BackupFileProvider @Inject constructor() {
 
     /**
      * Builds a timestamped backup file name, e.g.
-     * `attendance_tracker_backup_20260802_143000.json`.
+     * `safe75_backup_20260802_143000.json`.
      *
      * @param now Epoch millis; defaults to the current system time.
      */
@@ -62,7 +62,7 @@ class BackupFileProvider @Inject constructor() {
         createDefaultFileName(now)
 
     companion object {
-        private const val DEFAULT_BACKUP_PREFIX = "attendance_tracker_backup_"
+        private const val DEFAULT_BACKUP_PREFIX = "safe75_backup_"
         private const val DEFAULT_BACKUP_EXTENSION = ".json"
     }
 }

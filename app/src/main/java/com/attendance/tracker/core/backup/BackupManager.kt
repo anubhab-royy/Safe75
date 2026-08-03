@@ -120,7 +120,7 @@ class BackupManager @Inject constructor(
     }
 
     /**
-     * Builds a timestamped backup file name, e.g. `attendance_tracker_backup_20260802_143000.json`.
+     * Builds a timestamped backup file name, e.g. `safe75_backup_20260802_143000.json`.
      */
     fun createFileName(now: Long = System.currentTimeMillis()): String =
         fileProvider.createDefaultFileName(now)

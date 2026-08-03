@@ -54,7 +54,7 @@ interface AttendanceLocalDataSource {
  * widget reflects the latest attendance state (see WidgetSyncWorker).
  */
 class AttendanceLocalDataSourceImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val attendanceDao: AttendanceDao
 ) : AttendanceLocalDataSource {
 

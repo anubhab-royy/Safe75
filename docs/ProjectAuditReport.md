@@ -1,6 +1,6 @@
 # Project Completion Audit Report
 
-**Project:** Attendance Tracker (`com.attendance.tracker`)
+**Project:** Safe75 (`com.attendance.tracker`)
 **Version audited:** 1.0.0 (versionCode 1)
 **Audit date:** 2026-08-02
 **Audit type:** Code-level technical audit (read-only, evidence-based)
@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary
 
-Attendance Tracker is a fully offline, single-activity Android app built with
+Safe75 is a fully offline, single-activity Android app built with
 Kotlin + Jetpack Compose (Material 3), Hilt, Room, DataStore, WorkManager,
 kotlinx.serialization, and ML Kit OCR. It delivers all 8 planned roadmap phases
 (subject/schedule/attendance management, attendance intelligence, reminders,

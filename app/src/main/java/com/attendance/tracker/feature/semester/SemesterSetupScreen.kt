@@ -19,7 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CameraAlt
@@ -30,7 +30,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -94,7 +94,7 @@ fun SemesterSetupScreen(
                             }
                             viewModel.setStep(prevStep)
                         }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
                 },
@@ -569,7 +569,7 @@ private fun BackfillStepView(
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(vertical = 4.dp)
                             )
-                            Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         }
 
                         items(classes) { item ->

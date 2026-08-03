@@ -1,6 +1,6 @@
 # Feature Specification Document
 
-This document provides specifications for the features of **Attendance Tracker**.
+This document provides specifications for the features of **Safe75**.
 
 ---
 

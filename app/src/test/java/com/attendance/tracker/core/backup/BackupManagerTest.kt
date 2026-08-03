@@ -117,7 +117,7 @@ class BackupManagerTest {
     fun testCreateFileName_hasTimestampAndExtension() {
         val name = manager.createFileName(1_700_000_000_000L)
         assertTrue(name.endsWith(".json"))
-        assertTrue(name.startsWith("attendance_tracker_backup_"))
+        assertTrue(name.startsWith("safe75_backup_"))
     }
 
     @Test

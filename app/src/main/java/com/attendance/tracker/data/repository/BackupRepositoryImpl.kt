@@ -45,7 +45,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class BackupRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val subjectDao: SubjectDao,
     private val scheduleDao: ScheduleDao,
     private val semesterDao: SemesterDao,

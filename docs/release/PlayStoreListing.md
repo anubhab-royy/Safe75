@@ -1,4 +1,4 @@
-# Attendance Tracker — Play Store Listing (v1.0.0)
+# Safe75 — Play Store Listing (v1.0.0)
 
 Draft copy for the Google Play Store listing.
 
@@ -6,7 +6,7 @@ Draft copy for the Google Play Store listing.
 
 ## App name
 
-**Attendance Tracker — Safe 75%**
+**Safe75 — Safe 75%**
 
 ## Tagline / Short description
 
@@ -14,7 +14,7 @@ Track, simulate, and plan your class attendance to stay safely above your instit
 
 ## Full description (long)
 
-**Attendance Tracker** helps university and college students keep their attendance
+**Safe75** helps university and college students keep their attendance
 above the minimum required percentage with a clean, offline-first experience.
 
 **Key features**

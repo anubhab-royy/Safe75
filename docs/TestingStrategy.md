@@ -1,6 +1,6 @@
 # Testing Strategy Document
 
-This document defines the testing methodology, tools, execution frameworks, and quality gates for **Attendance Tracker**.
+This document defines the testing methodology, tools, execution frameworks, and quality gates for **Safe75**.
 
 ---
 

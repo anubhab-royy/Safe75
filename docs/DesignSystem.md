@@ -1,6 +1,6 @@
 # UI Design System Document
 
-This document defines the **Material 3** principles, color tokens, typography scales, components structure, and spacing tokens for **Attendance Tracker**.
+This document defines the **Material 3** principles, color tokens, typography scales, components structure, and spacing tokens for **Safe75**.
 
 ---
 

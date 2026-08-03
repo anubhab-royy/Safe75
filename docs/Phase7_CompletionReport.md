@@ -45,7 +45,7 @@ BackupManager.parseBackup(json)
 
 - **`BackupError.kt`** — typed taxonomy: `InvalidJson`, `OldBackupVersion`, `UnsupportedSchema`, `FilePermission`, `StorageUnavailable`, `CorruptedArchive`, `Unknown`.
 - **`BackupManager.classifyError(Throwable)`** — maps arbitrary exceptions to `BackupError` (Serialization → InvalidJson, Security/AccessControl/FileNotFound → FilePermission, IO → StorageUnavailable/FilePermission by message, else Unknown).
-- **`BackupFileProvider.kt`** — pure, Android-free naming: `attendance_tracker_backup_yyyyMMdd_HHmmss.json`, case-insensitive `.json` check.
+- **`BackupFileProvider.kt`** — pure, Android-free naming: `safe75_backup_yyyyMMdd_HHmmss.json`, case-insensitive `.json` check.
 - **`BackupRepositoryImpl`** — routes every parse+validate through `BackupManager` (`readAndParse` helper); SAF file I/O via `ContentResolver`. No duplicated deserialization/validation logic anywhere.
 - **Versions** — `CURRENT_SCHEMA_VERSION = 1`, `CURRENT_BACKUP_VERSION = 1` (`BackupMetadata.kt`).
 

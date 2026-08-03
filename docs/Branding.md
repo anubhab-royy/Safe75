@@ -1,13 +1,13 @@
 # App Branding Document
 
-This document establishes the app's visual identity, app icons, color psychology, and Play Store metadata specifications for **Attendance Tracker**.
+This document establishes the app's visual identity, app icons, color psychology, and Play Store metadata specifications for **Safe75**.
 
 ---
 
 ## 1. Visual Brand Guidelines
 
 ### 1.1 Application Name
-- **Primary Name:** Attendance Tracker
+- **Primary Name:** Safe75
 - **Tagline:** Safe at 75%
 - **Brand Style:** Clean, minimalist, and educational, yet highly tool-oriented.
 
@@ -24,7 +24,7 @@ This document establishes the app's visual identity, app icons, color psychology
 ### 2.1 Logo Concept
 The logo consists of a circular progress ring integrated with a calendar grid.
 - **Symbol:** A stylized calendar page where the calendar grid transforms into a circular progress meter.
-- **Text:** "Attendance Tracker" rendered in custom sans-serif typography.
+- **Text:** "Safe75" rendered in custom sans-serif typography.
 
 ### 2.2 Adaptive App Icon Structure
 For Android 8.0+ devices:
@@ -49,9 +49,9 @@ The splash screen is built using the AndroidX Splash Screen API:
 > Easily track your class attendance, simulate skip impacts, and meet targets.
 
 ### 4.2 Full Description
-> Take control of your academic schedule with Attendance Tracker!
+> Take control of your academic schedule with Safe75!
 > 
-> Enforcing strict 75% university attendance rules can be stressful. Attendance Tracker helps you stay organized. With predictive analytics, daily logging, and timetable schedules, you always know where you stand.
+> Enforcing strict 75% university attendance rules can be stressful. Safe75 helps you stay organized. With predictive analytics, daily logging, and timetable schedules, you always know where you stand.
 > 
 > KEY FEATURES:
 > - **Timetable OCR Import:** Take a photo of your schedule to import classes in seconds.

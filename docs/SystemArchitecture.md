@@ -1,12 +1,12 @@
 # System Architecture Document
 
-This document details the architectural layout, package boundaries, data flows, and configuration modules of the **Attendance Tracker** Android application.
+This document details the architectural layout, package boundaries, data flows, and configuration modules of the **Safe75** Android application.
 
 ---
 
 ## 1. Clean Architecture & MVVM Structure
 
-Attendance Tracker is constructed using **Clean Architecture** layered concepts, complemented by **MVVM (Model-View-ViewModel)** for the presentation structure.
+Safe75 is constructed using **Clean Architecture** layered concepts, complemented by **MVVM (Model-View-ViewModel)** for the presentation structure.
 
 ```mermaid
 graph TD

@@ -35,3 +35,7 @@ captures/
 
 # Legacy root build rule (kept for compatibility)
 /build
+
+# Release artifacts
+app/release/*.apk
+app/release/*.aab
