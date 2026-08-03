@@ -129,6 +129,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockito.core)
+    testImplementation("org.openpnp:opencv:4.9.0-0")
 
     // Instrumented tests: jUnit rules and runners
     androidTestImplementation(libs.androidx.test.core)
@@ -160,6 +161,9 @@ dependencies {
 
     // ML Kit OCR (dependency only)
     implementation(libs.mlkit.ocr)
+
+    // OpenCV for image preprocessing and table layout analysis
+    implementation(libs.opencv)
 
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)

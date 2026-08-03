@@ -145,7 +145,6 @@ fun OCRReviewScreen(
                     .background(MaterialTheme.colorScheme.background)
                     .padding(paddingValues)
             ) {
-                // Warning panel if empty text parsed
                 val isEmpty = if (isTimetable) timetableRows.isEmpty() else attendanceRows.isEmpty()
 
                 if (isEmpty) {
@@ -166,29 +165,107 @@ fun OCRReviewScreen(
                         }
                     }
                 } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(Dimensions.SpacingMedium),
-                        verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
-                    ) {
-                        if (isTimetable) {
-                            items(timetableRows, key = { it.id }) { row ->
-                                TimetableReviewCard(
-                                    row = row,
-                                    onEdit = { viewModel.updateTimetableRow(it) },
-                                    onDelete = { viewModel.deleteTimetableRow(row.id) }
-                                )
+                    var showUncertainOnly by remember { mutableStateOf(true) }
+
+                    val filteredTimetableRows = remember(timetableRows, showUncertainOnly) {
+                        if (showUncertainOnly) {
+                            timetableRows.filter { row ->
+                                row.subjectName.confidence < 0.85f ||
+                                row.dayOfWeek.confidence < 0.85f ||
+                                row.startTime.confidence < 0.85f ||
+                                row.endTime.confidence < 0.85f
                             }
                         } else {
-                            items(attendanceRows, key = { it.id }) { row ->
-                                AttendanceReviewCard(
-                                    row = row,
-                                    subjects = subjects,
-                                    currentMapping = subjectMappings[row.id] ?: row.matchedSubjectId,
-                                    onEdit = { viewModel.updateAttendanceRow(it) },
-                                    onDelete = { viewModel.deleteAttendanceRow(row.id) },
-                                    onMap = { subjectMappings[row.id] = it }
+                            timetableRows
+                        }
+                    }
+
+                    val filteredAttendanceRows = remember(attendanceRows, showUncertainOnly) {
+                        if (showUncertainOnly) {
+                            attendanceRows.filter { row ->
+                                row.subjectName.confidence < 0.85f ||
+                                row.percentage.confidence < 0.85f
+                            }
+                        } else {
+                            attendanceRows
+                        }
+                    }
+
+                    val showEmptyUncertain = if (isTimetable) filteredTimetableRows.isEmpty() else filteredAttendanceRows.isEmpty()
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Dimensions.SpacingMedium, vertical = Dimensions.SpacingSmall),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (showUncertainOnly) "Showing Uncertain Entries Only" else "Showing All Scanned Rows",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Uncertain Only",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(end = Dimensions.SpacingSmall)
+                            )
+                            androidx.compose.material3.Switch(
+                                checked = showUncertainOnly,
+                                onCheckedChange = { showUncertainOnly = it }
+                            )
+                        }
+                    }
+
+                    if (showEmptyUncertain) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(Dimensions.SpacingMedium),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)
+                            ) {
+                                Text(
+                                    text = "All parsed items have high confidence!",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
                                 )
+                                Text(
+                                    text = "Disable the filter toggle above to review everything.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(Dimensions.SpacingMedium),
+                            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium)
+                        ) {
+                            if (isTimetable) {
+                                items(filteredTimetableRows, key = { it.id }) { row ->
+                                    TimetableReviewCard(
+                                        row = row,
+                                        onEdit = { viewModel.updateTimetableRow(it) },
+                                        onDelete = { viewModel.deleteTimetableRow(row.id) }
+                                    )
+                                }
+                            } else {
+                                items(filteredAttendanceRows, key = { it.id }) { row ->
+                                    AttendanceReviewCard(
+                                        row = row,
+                                        subjects = subjects,
+                                        currentMapping = subjectMappings[row.id] ?: row.matchedSubjectId,
+                                        onEdit = { viewModel.updateAttendanceRow(it) },
+                                        onDelete = { viewModel.deleteAttendanceRow(row.id) },
+                                        onMap = { subjectMappings[row.id] = it }
+                                    )
+                                }
                             }
                         }
                     }

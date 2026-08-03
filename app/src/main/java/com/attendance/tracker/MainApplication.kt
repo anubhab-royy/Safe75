@@ -30,6 +30,13 @@ class MainApplication : Application(), Configuration.Provider {
             enableStrictMode()
         }
         TrackerNotificationManager.createNotificationChannelsAsync(this)
+
+        // Initialize OpenCV
+        if (org.opencv.android.OpenCVLoader.initDebug()) {
+            Logger.d("MainApplication", "OpenCV loaded successfully")
+        } else {
+            Logger.e("MainApplication", "OpenCV initialization failed!")
+        }
     }
 
     /**

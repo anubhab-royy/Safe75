@@ -75,7 +75,19 @@ class OCRReviewViewModelTest {
         semesterRepo = FakeOcrSemesterRepository()
         attendanceRepo = LocalFakeAttendanceRepository()
 
-        val ocrRepo = OcrRepository(OcrScanner(), OcrParser())
+        val ocrRepo = OcrRepository(
+            scanner = OcrScanner(),
+            parser = OcrParser(),
+            imageProcessor = com.attendance.tracker.feature.ocr.processing.ImageProcessor(),
+            tableDetector = com.attendance.tracker.feature.ocr.detection.TableDetector(),
+            gridDetector = com.attendance.tracker.feature.ocr.structure.OpenCVGridDetector(),
+            cellExtractor = com.attendance.tracker.feature.ocr.extraction.CellExtractor(),
+            ocrRecognizer = com.attendance.tracker.feature.ocr.recognition.OcrRecognizer(OcrScanner()),
+            semanticParser = com.attendance.tracker.feature.ocr.parser.SemanticParser(
+                com.attendance.tracker.feature.ocr.validation.ValidationEngine(),
+                com.attendance.tracker.feature.ocr.parser.HeaderInterpreter()
+            )
+        )
 
         viewModel = OcrReviewViewModel(
             ocrRepository = ocrRepo,
