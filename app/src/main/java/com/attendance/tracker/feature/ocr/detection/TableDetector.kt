@@ -35,6 +35,7 @@ class TableDetector @Inject constructor() {
         val horizontalStructure = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(horizontalSize.toDouble(), 1.0))
         Imgproc.erode(horizontal, horizontal, horizontalStructure)
         Imgproc.dilate(horizontal, horizontal, horizontalStructure)
+        horizontalStructure.release()
 
         val vertical = threshMat.clone()
         val scaleV = 35 // Kernel scale factor for vertical lines
@@ -42,6 +43,7 @@ class TableDetector @Inject constructor() {
         val verticalStructure = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(1.0, verticalSize.toDouble()))
         Imgproc.erode(vertical, vertical, verticalStructure)
         Imgproc.dilate(vertical, vertical, verticalStructure)
+        verticalStructure.release()
 
         val combined = Mat()
         Core.bitwise_or(horizontal, vertical, combined)

@@ -42,7 +42,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -72,11 +72,11 @@ fun DashboardScreen(
     onNavigateToLeavePlanner: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
-    val activeVersion by viewModel.activeVersion.collectAsState()
-    val dashboardStats by viewModel.dashboardStats.collectAsState()
-    val subjectStatsList by viewModel.subjectStatsList.collectAsState()
-    val todayClasses by viewModel.todayClasses.collectAsState()
-    val goal by viewModel.attendanceGoal.collectAsState()
+    val activeVersion by viewModel.activeVersion.collectAsStateWithLifecycle()
+    val dashboardStats by viewModel.dashboardStats.collectAsStateWithLifecycle()
+    val subjectStatsList by viewModel.subjectStatsList.collectAsStateWithLifecycle()
+    val todayClasses by viewModel.todayClasses.collectAsStateWithLifecycle()
+    val goal by viewModel.attendanceGoal.collectAsStateWithLifecycle()
 
     var expandedCards by remember { mutableStateOf(emptySet<Long>()) }
 

@@ -11,9 +11,19 @@ import java.io.IOException
  */
 class BackupManagerTest {
 
+    private val json = kotlinx.serialization.json.Json {
+        prettyPrint = true
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
+
+    private val serializer = BackupSerializer(json)
+    private val deserializer = BackupDeserializer(json)
+
     private val manager = BackupManager(
-        serializer = BackupSerializer(),
-        deserializer = BackupDeserializer(),
+        serializer = serializer,
+        deserializer = deserializer,
         validator = BackupValidator(),
         fileProvider = BackupFileProvider()
     )
@@ -28,7 +38,7 @@ class BackupManagerTest {
             semesterVersions = emptyList(),
             attendanceRecords = emptyList()
         )
-        return BackupSerializer().serialize(data)
+        return serializer.serialize(data)
     }
 
     @Test
@@ -54,7 +64,7 @@ class BackupManagerTest {
 
     @Test
     fun testParseBackup_unsupportedSchema_returnsUnsupportedSchema() {
-        val json = BackupSerializer().serialize(
+        val json = serializer.serialize(
             BackupData(
                 metadata = BackupMetadata(backupVersion = 1, appVersion = "1.0", schemaVersion = 99, createdAt = now)
             )
@@ -66,7 +76,7 @@ class BackupManagerTest {
 
     @Test
     fun testParseBackup_newerBackupVersion_returnsOldBackupVersion() {
-        val json = BackupSerializer().serialize(
+        val json = serializer.serialize(
             BackupData(
                 metadata = BackupMetadata(backupVersion = 99, appVersion = "2.0", schemaVersion = 1, createdAt = now)
             )
@@ -84,7 +94,7 @@ class BackupManagerTest {
                 BackupScheduleDto(10L, 404L, "Monday", "09:00", "10:00", versionId = 5L, createdAt = now, updatedAt = now)
             )
         )
-        val result = manager.parseBackup(BackupSerializer().serialize(data))
+        val result = manager.parseBackup(serializer.serialize(data))
         assertTrue(result is BackupParseResult.Rejected)
         assertTrue((result as BackupParseResult.Rejected).error is BackupError.InvalidJson)
     }

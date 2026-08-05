@@ -75,6 +75,12 @@ class OCRReviewViewModelTest {
         semesterRepo = FakeOcrSemesterRepository()
         attendanceRepo = LocalFakeAttendanceRepository()
 
+        val testDispatcherProvider = object : com.attendance.tracker.core.common.DispatcherProvider {
+            override val main = testDispatcher
+            override val io = testDispatcher
+            override val default = testDispatcher
+        }
+
         val ocrRepo = OcrRepository(
             scanner = OcrScanner(),
             parser = OcrParser(),
@@ -85,8 +91,10 @@ class OCRReviewViewModelTest {
             ocrRecognizer = com.attendance.tracker.feature.ocr.recognition.OcrRecognizer(OcrScanner()),
             semanticParser = com.attendance.tracker.feature.ocr.parser.SemanticParser(
                 com.attendance.tracker.feature.ocr.validation.ValidationEngine(),
-                com.attendance.tracker.feature.ocr.parser.HeaderInterpreter()
-            )
+                com.attendance.tracker.feature.ocr.parser.HeaderInterpreter(),
+                kotlinx.serialization.json.Json { prettyPrint = true }
+            ),
+            dispatcherProvider = testDispatcherProvider
         )
 
         viewModel = OcrReviewViewModel(

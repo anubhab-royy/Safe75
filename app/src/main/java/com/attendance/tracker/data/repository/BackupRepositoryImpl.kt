@@ -26,9 +26,9 @@ import com.attendance.tracker.data.local.preferences.SettingsPreferences
 import com.attendance.tracker.domain.model.BackupResult
 import com.attendance.tracker.domain.model.RestoreOptions
 import com.attendance.tracker.domain.model.RestoreResult
+import com.attendance.tracker.core.common.DispatcherProvider
 import com.attendance.tracker.domain.repository.BackupRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -51,7 +51,8 @@ class BackupRepositoryImpl @Inject constructor(
     private val semesterDao: SemesterDao,
     private val attendanceDao: AttendanceDao,
     private val settingsPreferences: SettingsPreferences,
-    private val backupManager: BackupManager
+    private val backupManager: BackupManager,
+    private val dispatcherProvider: DispatcherProvider
 ) : BackupRepository {
 
     // -------------------------------------------------------------------------
@@ -59,7 +60,7 @@ class BackupRepositoryImpl @Inject constructor(
     // -------------------------------------------------------------------------
 
     override suspend fun exportBackup(destinationUri: Uri): BackupResult =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             try {
                 val data = getBackupData()
                 val json = backupManager.serialize(data)
@@ -88,7 +89,7 @@ class BackupRepositoryImpl @Inject constructor(
     // -------------------------------------------------------------------------
 
     override suspend fun importBackup(sourceUri: Uri, options: RestoreOptions): RestoreResult =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             when (val parsed = readAndParse(sourceUri)) {
                 is BackupParseResult.Rejected -> RestoreResult.Failure(parsed.error.message ?: "Invalid backup.")
                 is BackupParseResult.Parsed -> applyRestore(parsed.data, options)
@@ -96,7 +97,7 @@ class BackupRepositoryImpl @Inject constructor(
         }
 
     override suspend fun validateBackup(sourceUri: Uri): ValidationResult =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             when (val parsed = readAndParse(sourceUri)) {
                 is BackupParseResult.Rejected ->
                     ValidationResult.Invalid(listOf(parsed.error.message ?: "Invalid backup."))
@@ -105,7 +106,7 @@ class BackupRepositoryImpl @Inject constructor(
         }
 
     override suspend fun previewBackup(sourceUri: Uri): Result<BackupData> =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             when (val parsed = readAndParse(sourceUri)) {
                 is BackupParseResult.Rejected -> Result.failure(parsed.error)
                 is BackupParseResult.Parsed -> Result.success(parsed.data)
@@ -116,7 +117,7 @@ class BackupRepositoryImpl @Inject constructor(
     // Snapshot
     // -------------------------------------------------------------------------
 
-    override suspend fun getBackupData(): BackupData = withContext(Dispatchers.IO) {
+    override suspend fun getBackupData(): BackupData = withContext(dispatcherProvider.io) {
         val subjects = subjectDao.getSubjects().map { e ->
             BackupSubjectDto(e.id, e.name, e.facultyName, e.color,
                 e.requiredAttendancePercentage, e.personalAttendanceGoal, e.createdAt, e.updatedAt)
@@ -161,7 +162,7 @@ class BackupRepositoryImpl @Inject constructor(
     // -------------------------------------------------------------------------
 
     override suspend fun applyRestore(data: BackupData, options: RestoreOptions): RestoreResult =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             try {
                 var subjectsRestored = 0
                 var schedulesRestored = 0

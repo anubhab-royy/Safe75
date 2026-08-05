@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.schedule
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,7 +35,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,10 +68,10 @@ fun AddEditScheduleScreen(
     viewModel: ScheduleViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val subjects by viewModel.subjects.collectAsState()
-    val validationState by viewModel.validationState.collectAsState()
-    val conflicts by viewModel.conflicts.collectAsState()
-    val pendingBackfill by viewModel.pendingBackfillPrompt.collectAsState()
+    val subjects by viewModel.subjects.collectAsStateWithLifecycle()
+    val validationState by viewModel.validationState.collectAsStateWithLifecycle()
+    val conflicts by viewModel.conflicts.collectAsStateWithLifecycle()
+    val pendingBackfill by viewModel.pendingBackfillPrompt.collectAsStateWithLifecycle()
 
     var selectedSubject by remember { mutableStateOf<Subject?>(null) }
     var selectedDays by remember { mutableStateOf(setOf<WeekDay>()) }
@@ -124,8 +126,8 @@ fun AddEditScheduleScreen(
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text("Discard Changes") },
-            text = { Text("You have unsaved changes. Are you sure you want to discard them?") },
+            title = { Text(stringResource(R.string.discard_changes)) },
+            text = { Text(stringResource(R.string.you_have_unsaved_changes_are)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -139,7 +141,7 @@ fun AddEditScheduleScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDiscardDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -163,7 +165,7 @@ fun AddEditScheduleScreen(
                 viewModel.dismissBackfillPrompt()
                 onNavigateBack()
             },
-            title = { Text("Backfill Attendance") },
+            title = { Text(stringResource(R.string.backfill_attendance)) },
             text = {
                 Text(
                     "${prompt.subjectName} has ${prompt.missingCount} past " +
@@ -179,7 +181,7 @@ fun AddEditScheduleScreen(
                         onNavigateToBackfill(subjectId)
                     }
                 ) {
-                    Text("Backfill Now")
+                    Text(stringResource(R.string.backfill_now))
                 }
             },
             dismissButton = {
@@ -189,7 +191,7 @@ fun AddEditScheduleScreen(
                         onNavigateBack()
                     }
                 ) {
-                    Text("Later")
+                    Text(stringResource(R.string.later))
                 }
             }
         )
@@ -211,15 +213,15 @@ fun AddEditScheduleScreen(
                         showStartTimePicker = false
                     }
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.ok))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showStartTimePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
-            title = { Text("Select Start Time") },
+            title = { Text(stringResource(R.string.select_start_time)) },
             text = {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TimePicker(state = pickerState)
@@ -244,15 +246,15 @@ fun AddEditScheduleScreen(
                         showEndTimePicker = false
                     }
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.ok))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEndTimePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
-            title = { Text("Select End Time") },
+            title = { Text(stringResource(R.string.select_end_time)) },
             text = {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TimePicker(state = pickerState)
@@ -375,7 +377,7 @@ fun AddEditScheduleScreen(
             OutlinedTextField(
                 value = room,
                 onValueChange = { room = it },
-                label = { Text("Room / Lab Name (Optional)") },
+                label = { Text(stringResource(R.string.room_lab_name_optional)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth()
@@ -385,7 +387,7 @@ fun AddEditScheduleScreen(
             OutlinedTextField(
                 value = teacher,
                 onValueChange = { teacher = it },
-                label = { Text("Teacher Override Name (Optional)") },
+                label = { Text(stringResource(R.string.teacher_override_name_optional)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 modifier = Modifier.fillMaxWidth()
@@ -411,7 +413,7 @@ fun AddEditScheduleScreen(
                     onClick = onBackRequest,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
                 Button(
                     onClick = {
@@ -439,7 +441,7 @@ fun AddEditScheduleScreen(
                     enabled = selectedDays.isNotEmpty(),
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
             }
         }

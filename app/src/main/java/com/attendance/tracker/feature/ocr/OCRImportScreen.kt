@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.ocr
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -118,7 +120,7 @@ fun OCRImportScreen(
                         onClick = { isTimetable = true }
                     )
                     Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
-                    Text("Timetable (extracts days, timings, rooms, names)")
+                    Text(stringResource(R.string.timetable_extracts_days_timings_rooms))
                 }
 
                 Row(
@@ -132,7 +134,7 @@ fun OCRImportScreen(
                         onClick = { isTimetable = false }
                     )
                     Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
-                    Text("Existing ERP Attendance counts (extracts present/total ratios)")
+                    Text(stringResource(R.string.existing_erp_attendance_counts_extracts))
                 }
             }
 
@@ -145,7 +147,7 @@ fun OCRImportScreen(
             ) {
                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                 Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
-                Text("Select Screenshot from Gallery")
+                Text(stringResource(R.string.select_screenshot_from_gallery))
             }
         }
     }

@@ -34,12 +34,20 @@ class OcrPipelineRunner {
         }
     }
 
+    init {
+        com.attendance.tracker.core.logger.Logger.setEngine(com.attendance.tracker.core.logger.NoOpLogEngine())
+    }
+
     private val imageProcessor = ImageProcessor()
     private val tableDetector = TableDetector()
     private val gridDetector = OpenCVGridDetector()
     private val validationEngine = ValidationEngine()
     private val headerInterpreter = HeaderInterpreter()
-    private val semanticParser = SemanticParser(validationEngine, headerInterpreter)
+    private val semanticParser = SemanticParser(
+        validationEngine,
+        headerInterpreter,
+        kotlinx.serialization.json.Json { prettyPrint = true }
+    )
 
     @Test
     fun runCompleteOcrPipeline() {

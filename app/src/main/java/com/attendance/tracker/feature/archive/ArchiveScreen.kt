@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.archive
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,7 +40,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,8 +71,8 @@ fun ArchiveScreen(
     onNavigateToDetails: (Long) -> Unit,
     viewModel: ArchiveViewModel = hiltViewModel()
 ) {
-    val archives by viewModel.archives.collectAsState()
-    val state by viewModel.uiState.collectAsState()
+    val archives by viewModel.archives.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -128,15 +130,15 @@ fun ArchiveScreen(
     state.showDeleteConfirm?.let { id ->
         AlertDialog(
             onDismissRequest = viewModel::dismissDelete,
-            title = { Text("Delete Archive") },
-            text = { Text("This permanently removes the archived semester. This cannot be undone.") },
+            title = { Text(stringResource(R.string.delete_archive)) },
+            text = { Text(stringResource(R.string.this_permanently_removes_the_archived)) },
             confirmButton = {
                 TextButton(onClick = { viewModel.deleteArchive(id) }) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::dismissDelete) { Text("Cancel") }
+                TextButton(onClick = viewModel::dismissDelete) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -229,7 +231,7 @@ private fun CreateArchiveDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Archive Current Semester") },
+        title = { Text(stringResource(R.string.archive_current_semester)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
                 Text(
@@ -241,8 +243,8 @@ private fun CreateArchiveDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Semester Name") },
-                    placeholder = { Text("e.g. Fall 2026") },
+                    label = { Text(stringResource(R.string.semester_name)) },
+                    placeholder = { Text(stringResource(R.string.eg_fall_2026)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -262,10 +264,10 @@ private fun CreateArchiveDialog(
             Button(
                 onClick = { onCreate(name.trim().ifBlank { "Semester ${endDate.year}" }, startDate, endDate) },
                 enabled = name.isNotBlank() && !endDate.isBefore(startDate)
-            ) { Text("Archive") }
+            ) { Text(stringResource(R.string.archive)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         }
     )
 }
@@ -279,7 +281,7 @@ private fun DateField(
     OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(Dimensions.SpacingSmall))
-        Text("$label: $value")
+        Text(stringResource(R.string.str_res, label, value))
     }
 }
 

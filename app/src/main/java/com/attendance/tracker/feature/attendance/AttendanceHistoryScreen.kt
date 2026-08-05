@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.attendance
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,7 +38,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,11 +69,11 @@ fun AttendanceHistoryScreen(
     viewModel: AttendanceViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val historyRecords by viewModel.historyRecords.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val selectedSubjectId by viewModel.selectedSubjectId.collectAsState()
-    val selectedDate by viewModel.selectedDate.collectAsState()
-    val subjectsMap by viewModel.subjectsMap.collectAsState()
+    val historyRecords by viewModel.historyRecords.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val selectedSubjectId by viewModel.selectedSubjectId.collectAsStateWithLifecycle()
+    val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
+    val subjectsMap by viewModel.subjectsMap.collectAsStateWithLifecycle()
 
     var showSubjectDropdown by remember { mutableStateOf(false) }
 
@@ -109,7 +111,7 @@ fun AttendanceHistoryScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
-                placeholder = { Text("Search by subject or remarks...") },
+                placeholder = { Text(stringResource(R.string.search_by_subject_or_remarks)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
@@ -147,7 +149,7 @@ fun AttendanceHistoryScreen(
                         onDismissRequest = { showSubjectDropdown = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("All Subjects") },
+                            text = { Text(stringResource(R.string.all_subjects)) },
                             onClick = {
                                 viewModel.onSubjectFilterChange(null)
                                 showSubjectDropdown = false

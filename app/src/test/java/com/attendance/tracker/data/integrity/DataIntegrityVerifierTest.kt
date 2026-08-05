@@ -111,7 +111,13 @@ class DataIntegrityVerifierTest {
         scheduleDao = FakeScheduleDao()
         semesterDao = FakeSemesterDao()
         attendanceDao = FakeAttendanceDao()
-        verifier = DataIntegrityVerifier(subjectDao, scheduleDao, semesterDao, attendanceDao)
+        
+        val testDispatcherProvider = object : com.attendance.tracker.core.common.DispatcherProvider {
+            override val main = kotlinx.coroutines.test.UnconfinedTestDispatcher()
+            override val io = kotlinx.coroutines.test.UnconfinedTestDispatcher()
+            override val default = kotlinx.coroutines.test.UnconfinedTestDispatcher()
+        }
+        verifier = DataIntegrityVerifier(subjectDao, scheduleDao, semesterDao, attendanceDao, testDispatcherProvider)
     }
 
     @Test

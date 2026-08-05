@@ -8,13 +8,15 @@ import com.attendance.tracker.feature.ocr.model.OcrField
 import com.attendance.tracker.feature.ocr.scanner.OcrScanner
 import com.attendance.tracker.feature.ocr.parser.OcrParser
 import com.attendance.tracker.feature.ocr.processing.ImageProcessor
+import com.attendance.tracker.feature.ocr.processing.PreprocessedImage
 import com.attendance.tracker.feature.ocr.processing.QualityCheckResult
 import com.attendance.tracker.feature.ocr.detection.TableDetector
+import com.attendance.tracker.feature.ocr.detection.GridMasks
 import com.attendance.tracker.feature.ocr.structure.OpenCVGridDetector
 import com.attendance.tracker.feature.ocr.extraction.CellExtractor
 import com.attendance.tracker.feature.ocr.recognition.OcrRecognizer
 import com.attendance.tracker.feature.ocr.parser.SemanticParser
-import kotlinx.coroutines.Dispatchers
+import com.attendance.tracker.core.common.DispatcherProvider
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import javax.inject.Inject
@@ -31,14 +33,15 @@ class OcrRepository @Inject constructor(
     private val gridDetector: OpenCVGridDetector,
     private val cellExtractor: CellExtractor,
     private val ocrRecognizer: OcrRecognizer,
-    private val semanticParser: SemanticParser
+    private val semanticParser: SemanticParser,
+    private val dispatcherProvider: DispatcherProvider
 ) {
     /**
      * Scans an image, runs quality check, segments table cells, performs OCR cell-by-cell,
      * and compiles structural timetable class rows.
      */
     suspend fun importTimetable(context: Context, uri: Uri): Result<List<OcrTimetableRow>> =
-        withContext(Dispatchers.Default) {
+        withContext(dispatcherProvider.default) {
             val matResult = imageProcessor.loadMatFromUri(context, uri)
             if (matResult.isFailure) {
                 return@withContext Result.failure(
@@ -46,6 +49,8 @@ class OcrRepository @Inject constructor(
                 )
             }
             val originalMat = matResult.getOrThrow()
+            var preprocessed: PreprocessedImage? = null
+            var gridMasks: GridMasks? = null
             try {
                 // 1. Image Quality Check
                 val quality = imageProcessor.checkQuality(originalMat)
@@ -54,20 +59,16 @@ class OcrRepository @Inject constructor(
                 }
 
                 // 2. Image Preprocessing
-                val preprocessed = imageProcessor.preprocess(originalMat)
+                val prep = imageProcessor.preprocess(originalMat)
+                preprocessed = prep
                 
                 // 3. Grid Lines Extraction
-                val gridMasks = tableDetector.extractGridMasks(preprocessed.threshMat)
+                val masks = tableDetector.extractGridMasks(prep.threshMat)
+                gridMasks = masks
                 
                 // 4. Table Detection
-                val tables = tableDetector.detectTables(preprocessed.threshMat, gridMasks)
+                val tables = tableDetector.detectTables(prep.threshMat, masks)
                 if (tables.isEmpty()) {
-                    gridMasks.horizontal.release()
-                    gridMasks.vertical.release()
-                    gridMasks.combined.release()
-                    preprocessed.originalMat.release()
-                    preprocessed.grayMat.release()
-                    preprocessed.threshMat.release()
                     return@withContext Result.failure(
                         Exception("Could not detect any table grids. Please ensure the timetable borders are clearly visible.")
                     )
@@ -79,13 +80,13 @@ class OcrRepository @Inject constructor(
                 // 5. Grid Structure detection
                 val gridModel = gridDetector.detectStructure(
                     timetableRect,
-                    gridMasks.horizontal,
-                    gridMasks.vertical,
-                    gridMasks.combined
+                    masks.horizontal,
+                    masks.vertical,
+                    masks.combined
                 )
 
                 // 6. Cell Extraction
-                val extractedCells = cellExtractor.extractCells(preprocessed.originalMat, gridModel.cells)
+                val extractedCells = cellExtractor.extractCells(prep.originalMat, gridModel.cells)
 
                 // 7. Cell-by-cell Text Recognition
                 val recognizedCells = ocrRecognizer.recognizeCells(extractedCells)
@@ -105,19 +106,17 @@ class OcrRepository @Inject constructor(
                     )
                 }
 
-                // Clean up Mat memory allocations to prevent native leaks
-                gridMasks.horizontal.release()
-                gridMasks.vertical.release()
-                gridMasks.combined.release()
-                preprocessed.originalMat.release()
-                preprocessed.grayMat.release()
-                preprocessed.threshMat.release()
-
                 Result.success(mappedRows)
             } catch (e: Exception) {
                 Result.failure(e)
             } finally {
                 originalMat.release()
+                gridMasks?.horizontal?.release()
+                gridMasks?.vertical?.release()
+                gridMasks?.combined?.release()
+                preprocessed?.originalMat?.release()
+                preprocessed?.grayMat?.release()
+                preprocessed?.threshMat?.release()
             }
         }
 

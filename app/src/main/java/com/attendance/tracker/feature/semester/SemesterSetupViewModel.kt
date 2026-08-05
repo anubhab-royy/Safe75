@@ -1,5 +1,9 @@
 package com.attendance.tracker.feature.semester
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.attendance.tracker.core.model.AttendanceStatus
@@ -45,6 +49,7 @@ data class PastClassItem(
     val status: AttendanceStatus?
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SemesterSetupViewModel @Inject constructor(
     private val semesterRepository: SemesterRepository,
@@ -91,13 +96,17 @@ class SemesterSetupViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _createdSemesterId.collect { id ->
-                if (id != null) {
-                    scheduleRepository.observeSchedulesForVersion(id).collect { list ->
-                        _schedules.value = list
+            _createdSemesterId
+                .flatMapLatest { id ->
+                    if (id != null) {
+                        scheduleRepository.observeSchedulesForVersion(id)
+                    } else {
+                        flowOf(emptyList())
                     }
                 }
-            }
+                .collect { list ->
+                    _schedules.value = list
+                }
         }
 
         viewModelScope.launch {

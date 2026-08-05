@@ -2,6 +2,7 @@ package com.attendance.tracker.feature.ocr.parser
 
 import com.attendance.tracker.feature.ocr.recognition.RecognizedCell
 import com.attendance.tracker.feature.ocr.validation.ValidationEngine
+import com.attendance.tracker.core.logger.Logger
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
@@ -31,14 +32,13 @@ data class ParsedTimetableResult(
 @Singleton
 class SemanticParser @Inject constructor(
     private val validationEngine: ValidationEngine,
-    private val headerInterpreter: HeaderInterpreter
+    private val headerInterpreter: HeaderInterpreter,
+    private val json: Json
 ) {
 
     private val daysOfWeek = setOf(
         "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
     )
-
-    private val json = Json { prettyPrint = true }
 
     // Faculty code abbreviation to full name lookup mapping
     private val facultyLookup = mapOf(
@@ -111,16 +111,16 @@ class SemanticParser @Inject constructor(
         }
 
         // Debug outputs block
-        println("--- SEMANTIC PARSER DEBUG ---")
-        println("Detected Header Row: $headerRowIndex")
-        println("Detected Day Column: $dayColIndex")
-        println("Detected Column Mapping:")
+        Logger.d("SemanticParser", "--- SEMANTIC PARSER DEBUG ---")
+        Logger.d("SemanticParser", "Detected Header Row: $headerRowIndex")
+        Logger.d("SemanticParser", "Detected Day Column: $dayColIndex")
+        Logger.d("SemanticParser", "Detected Column Mapping:")
         timeSlots.forEach { (col, range) ->
-            println("  Column $col -> ${range.first} - ${range.second}")
+            Logger.d("SemanticParser", "  Column $col -> ${range.first} - ${range.second}")
         }
-        println("Detected Row Mapping:")
+        Logger.d("SemanticParser", "Detected Row Mapping:")
         rowDays.forEach { (row, day) ->
-            println("  Row $row -> $day")
+            Logger.d("SemanticParser", "  Row $row -> $day")
         }
 
         for (cell in contentCells) {
@@ -129,13 +129,13 @@ class SemanticParser @Inject constructor(
 
             // Skip recess/library hour cells
             if (specialKeywords.any { lowerText.contains(it) }) {
-                println("  Cell (Row ${cell.startRow} Col ${cell.startCol}) -> colSpan=${cell.colSpan}, text='$text' -> [SKIPPED (Special Keyword)]")
+                Logger.d("SemanticParser", "  Cell (Row ${cell.startRow} Col ${cell.startCol}) -> colSpan=${cell.colSpan}, text='$text' -> [SKIPPED (Special Keyword)]")
                 continue
             }
 
             val day = rowDays[cell.startRow]
             if (day == null) {
-                println("  Cell (Row ${cell.startRow} Col ${cell.startCol}) -> colSpan=${cell.colSpan}, text='$text' -> [SKIPPED (No matching day)]")
+                Logger.d("SemanticParser", "  Cell (Row ${cell.startRow} Col ${cell.startCol}) -> colSpan=${cell.colSpan}, text='$text' -> [SKIPPED (No matching day)]")
                 continue
             }
 
@@ -147,7 +147,7 @@ class SemanticParser @Inject constructor(
             val endTime = timeSlots[colEnd]?.second ?: timeSlots[colStart]?.second
 
             if (startTime == null || endTime == null) {
-                println("  Cell (Row ${cell.startRow} Col ${cell.startCol}) -> colSpan=${cell.colSpan}, text='$text' -> [SKIPPED (Missing time ranges: colStart=$colStart, colEnd=$colEnd)]")
+                Logger.d("SemanticParser", "  Cell (Row ${cell.startRow} Col ${cell.startCol}) -> colSpan=${cell.colSpan}, text='$text' -> [SKIPPED (Missing time ranges: colStart=$colStart, colEnd=$colEnd)]")
                 continue
             }
 
@@ -164,7 +164,7 @@ class SemanticParser @Inject constructor(
 
             val isLab = subjectOnly.contains("lab", ignoreCase = true)
 
-            println("  Cell (Row ${cell.startRow} Col ${cell.startCol}) -> " +
+            Logger.d("SemanticParser", "  Cell (Row ${cell.startRow} Col ${cell.startCol}) -> " +
                     "colSpan=${cell.colSpan}, rect=(${cell.rect.x}, ${cell.rect.y}, ${cell.rect.width}, ${cell.rect.height}), " +
                     "text='$text' -> Day=$day, Start=$startTime, End=$endTime, Subject='$subjectOnly', FacultyCode=$faculty, FacultyName=$facultyName, Lab=$isLab [PARSED]")
 
@@ -180,7 +180,7 @@ class SemanticParser @Inject constructor(
                 )
             )
         }
-        println("-----------------------------")
+        Logger.d("SemanticParser", "-----------------------------")
 
         return ParsedTimetableResult(subjects = parsedClasses)
     }

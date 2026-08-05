@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.settings
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +34,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,8 +63,8 @@ fun SettingsScreen(
     onNavigateToIntegrity: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val activeTheme by viewModel.themeState.collectAsState()
-    val currentGoal by viewModel.attendanceGoal.collectAsState()
+    val activeTheme by viewModel.themeState.collectAsStateWithLifecycle()
+    val currentGoal by viewModel.attendanceGoal.collectAsStateWithLifecycle()
     var showGoalDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -348,7 +350,7 @@ private fun AttendanceGoalDialog(
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Set Attendance Goal") },
+        title = { Text(stringResource(R.string.set_attendance_goal)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 options.forEach { opt ->
@@ -370,7 +372,7 @@ private fun AttendanceGoalDialog(
                             }
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("${opt.toInt()}%")
+                        Text(stringResource(R.string.str_res_1, opt.toInt()))
                     }
                 }
                 
@@ -386,7 +388,7 @@ private fun AttendanceGoalDialog(
                         onClick = { selectedOption = -1.0 }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Custom")
+                    Text(stringResource(R.string.custom))
                 }
 
                 if (selectedOption == -1.0) {
@@ -397,11 +399,11 @@ private fun AttendanceGoalDialog(
                             val value = it.toIntOrNull()
                             isInputError = value == null || value !in 50..100
                         },
-                        label = { Text("Custom Goal (%)") },
+                        label = { Text(stringResource(R.string.custom_goal)) },
                         isError = isInputError,
                         supportingText = {
                             if (isInputError) {
-                                Text("Enter a percentage between 50 and 100")
+                                Text(stringResource(R.string.enter_a_percentage_between_50))
                             }
                         },
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
@@ -425,12 +427,12 @@ private fun AttendanceGoalDialog(
                 },
                 enabled = selectedOption != -1.0 || (!isInputError && customInput.isNotBlank())
             ) {
-                Text("Save")
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
             androidx.compose.material3.TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

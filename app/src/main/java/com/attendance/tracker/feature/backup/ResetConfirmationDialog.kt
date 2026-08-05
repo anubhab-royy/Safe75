@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.backup
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,7 +39,7 @@ fun ResetConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Confirm Semester Reset") },
+        title = { Text(stringResource(R.string.confirm_semester_reset)) },
         text = {
             Column {
                 Text(
@@ -50,7 +52,7 @@ fun ResetConfirmationDialog(
                 OutlinedTextField(
                     value = confirmationText,
                     onValueChange = onTextChange,
-                    label = { Text("Type RESET to confirm") },
+                    label = { Text(stringResource(R.string.type_reset_to_confirm)) },
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
                     isError = confirmationText.isNotBlank() && !isConfirmEnabled,
                     modifier = Modifier.fillMaxWidth()
@@ -75,7 +77,7 @@ fun ResetConfirmationDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isLoading) { Text("Cancel") }
+            TextButton(onClick = onDismiss, enabled = !isLoading) { Text(stringResource(R.string.cancel)) }
         }
     )
 }

@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.subject
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,7 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -79,7 +81,7 @@ fun AddEditSubjectScreen(
     viewModel: SubjectViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val validationState by viewModel.validationState.collectAsState()
+    val validationState by viewModel.validationState.collectAsStateWithLifecycle()
 
     var name by remember { mutableStateOf("") }
     var faculty by remember { mutableStateOf("") }
@@ -126,8 +128,8 @@ fun AddEditSubjectScreen(
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text("Discard Changes") },
-            text = { Text("You have unsaved changes. Are you sure you want to discard them?") },
+            title = { Text(stringResource(R.string.discard_changes)) },
+            text = { Text(stringResource(R.string.you_have_unsaved_changes_are)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -141,7 +143,7 @@ fun AddEditSubjectScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDiscardDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -169,7 +171,7 @@ fun AddEditSubjectScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Subject Name") },
+                label = { Text(stringResource(R.string.subject_name)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
@@ -181,7 +183,7 @@ fun AddEditSubjectScreen(
             OutlinedTextField(
                 value = faculty,
                 onValueChange = { faculty = it },
-                label = { Text("Faculty / Teacher Name (Optional)") },
+                label = { Text(stringResource(R.string.faculty_teacher_name_optional)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 modifier = Modifier.fillMaxWidth(),
@@ -267,7 +269,7 @@ fun AddEditSubjectScreen(
                     onClick = onBackRequest,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
                 Button(
                     onClick = {
@@ -287,7 +289,7 @@ fun AddEditSubjectScreen(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
             }
         }

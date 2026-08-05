@@ -24,8 +24,8 @@ import com.attendance.tracker.domain.model.ResetPreview
 import com.attendance.tracker.domain.model.ResetResult
 import com.attendance.tracker.domain.model.RestoreOptions
 import com.attendance.tracker.domain.model.RestoreResult
+import com.attendance.tracker.core.common.DispatcherProvider
 import com.attendance.tracker.domain.repository.ArchiveRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -47,7 +47,8 @@ class ArchiveRepositoryImpl @Inject constructor(
     private val semesterDao: SemesterDao,
     private val attendanceDao: AttendanceDao,
     private val serializer: BackupSerializer,
-    private val deserializer: BackupDeserializer
+    private val deserializer: BackupDeserializer,
+    private val dispatcherProvider: DispatcherProvider
 ) : ArchiveRepository {
 
     // -------------------------------------------------------------------------
@@ -68,7 +69,7 @@ class ArchiveRepositoryImpl @Inject constructor(
         name: String,
         startDate: LocalDate,
         endDate: LocalDate
-    ): Long = withContext(Dispatchers.IO) {
+    ): Long = withContext(dispatcherProvider.io) {
         val subjects = subjectDao.getSubjects().map { e ->
             BackupSubjectDto(e.id, e.name, e.facultyName, e.color,
                 e.requiredAttendancePercentage, e.personalAttendanceGoal, e.createdAt, e.updatedAt)
@@ -110,7 +111,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     // Get Archive
     // -------------------------------------------------------------------------
 
-    override suspend fun getArchive(id: Long): ArchiveData? = withContext(Dispatchers.IO) {
+    override suspend fun getArchive(id: Long): ArchiveData? = withContext(dispatcherProvider.io) {
         archiveDao.getArchiveById(id)?.toDomainWithSubjectStats()
     }
 
@@ -118,7 +119,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     // Delete Archive
     // -------------------------------------------------------------------------
 
-    override suspend fun deleteArchive(id: Long) = withContext(Dispatchers.IO) {
+    override suspend fun deleteArchive(id: Long) = withContext(dispatcherProvider.io) {
         archiveDao.deleteArchiveById(id)
         Unit
     }
@@ -128,7 +129,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     // -------------------------------------------------------------------------
 
     override suspend fun restoreArchive(id: Long, options: RestoreOptions): RestoreResult =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             val entity = archiveDao.getArchiveById(id)
                 ?: return@withContext RestoreResult.Failure("Archive not found.")
             try {
@@ -188,7 +189,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     // -------------------------------------------------------------------------
 
     override suspend fun resetSemester(options: ResetOptions): ResetResult =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             try {
                 var attendanceDeleted = 0
                 var subjectsDeleted = 0
@@ -218,7 +219,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     // Reset Preview
     // -------------------------------------------------------------------------
 
-    override suspend fun getResetPreview(): ResetPreview = withContext(Dispatchers.IO) {
+    override suspend fun getResetPreview(): ResetPreview = withContext(dispatcherProvider.io) {
         ResetPreview(
             subjectCount = subjectDao.getSubjects().size,
             scheduleCount = scheduleDao.getAllSchedules().size,

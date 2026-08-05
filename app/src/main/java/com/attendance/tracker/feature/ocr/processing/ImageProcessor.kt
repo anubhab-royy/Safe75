@@ -118,6 +118,7 @@ class ImageProcessor @Inject constructor() {
         // 1. Denoise with bilateral filter to preserve sharp edges of grid lines
         val denoised = Mat()
         Imgproc.bilateralFilter(gray, denoised, 9, 75.0, 75.0)
+        gray.release()
 
         // 2. Auto Deskew
         val deskewed = deskew(denoised)

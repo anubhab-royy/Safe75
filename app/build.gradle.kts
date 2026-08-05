@@ -136,6 +136,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.mockito.core)
+    androidTestImplementation("org.mockito:mockito-android:5.11.0")
 
     // Navigation Compose
     implementation(libs.androidx.navigation.compose)

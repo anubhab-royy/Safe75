@@ -9,8 +9,15 @@ import org.junit.Test
  */
 class BackupSerializerTest {
 
-    private val serializer = BackupSerializer()
-    private val deserializer = BackupDeserializer()
+    private val json = kotlinx.serialization.json.Json {
+        prettyPrint = true
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
+
+    private val serializer = BackupSerializer(json)
+    private val deserializer = BackupDeserializer(json)
 
     private fun sampleData(): BackupData {
         val now = 1_700_000_000_000L

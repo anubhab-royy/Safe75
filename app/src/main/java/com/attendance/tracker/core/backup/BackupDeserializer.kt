@@ -13,12 +13,9 @@ import javax.inject.Singleton
  * schema error, so callers can handle errors without catching exceptions.
  */
 @Singleton
-class BackupDeserializer @Inject constructor() {
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-        coerceInputValues = true
-    }
+class BackupDeserializer @Inject constructor(
+    private val json: Json
+) {
 
     /**
      * Attempts to parse a JSON string into [BackupData].

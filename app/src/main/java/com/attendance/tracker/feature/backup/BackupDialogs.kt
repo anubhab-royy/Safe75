@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.backup
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -45,7 +47,7 @@ fun BackupPreviewDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Backup Preview") },
+        title = { Text(stringResource(R.string.backup_preview)) },
         text = {
             Column(
                 modifier = Modifier
@@ -76,13 +78,13 @@ fun BackupPreviewDialog(
         },
         confirmButton = {
             if (onContinue != null) {
-                Button(onClick = onContinue) { Text("Continue to Restore") }
+                Button(onClick = onContinue) { Text(stringResource(R.string.continue_to_restore)) }
             } else {
-                TextButton(onClick = onDismiss) { Text("Close") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         }
     )
 }
@@ -121,7 +123,7 @@ fun RestoreOptionsDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Restore Options") },
+        title = { Text(stringResource(R.string.restore_options)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 // Preview summary
@@ -163,10 +165,10 @@ fun RestoreOptionsDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm) { Text("Restore") }
+            Button(onClick = onConfirm) { Text(stringResource(R.string.restore)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         }
     )
 }

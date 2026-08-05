@@ -1,8 +1,11 @@
 package com.attendance.tracker.feature.schedule
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.attendance.tracker.core.common.AppError
 import com.attendance.tracker.core.common.UiState
 import com.attendance.tracker.core.model.WeekDay
 import com.attendance.tracker.data.mapper.ScheduleMapper
@@ -50,6 +53,7 @@ data class BackfillPrompt(
 /**
  * ViewModel managing the active weekly schedules, conflicts, and timetable version configurations.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
     private val observeScheduleUseCase: ObserveScheduleUseCase,
@@ -112,6 +116,47 @@ class ScheduleViewModel @Inject constructor(
         viewModelScope.launch {
             _subjects.value = subjectRepository.getSubjects()
         }
+
+        viewModelScope.launch {
+            _activeVersion
+                .flatMapLatest { active ->
+                    if (active != null) {
+                        combine(
+                            observeScheduleUseCase(active.id),
+                            _searchQuery
+                        ) { raw, query ->
+                            val subjectsMap = subjectRepository.getSubjects().associateBy { it.id }
+                            val mapped = raw.map { schedule ->
+                                val subject = subjectsMap[schedule.subjectId]
+                                ScheduleMapper.domainToUi(
+                                    domain = schedule,
+                                    subjectName = subject?.name ?: "Unknown Subject",
+                                    subjectColor = subject?.color ?: 0xFF9E9E9E.toInt(),
+                                    subjectFaculty = subject?.facultyName
+                                )
+                            }
+
+                            if (query.isBlank()) {
+                                mapped
+                            } else {
+                                mapped.filter {
+                                    it.subjectName.contains(query, ignoreCase = true) ||
+                                            (it.faculty?.contains(query, ignoreCase = true) == true) ||
+                                            (it.room?.contains(query, ignoreCase = true) == true)
+                                }
+                            }
+                        }
+                    } else {
+                        flowOf(emptyList())
+                    }
+                }
+                .catch {
+                    emit(emptyList())
+                }
+                .collect { list ->
+                    _schedules.value = list
+                }
+        }
     }
 
     private fun initVersions() {
@@ -119,7 +164,6 @@ class ScheduleViewModel @Inject constructor(
             semesterRepository.observeActiveVersion().collect { active ->
                 if (active != null) {
                     _activeVersion.value = active
-                    observeSchedules(active.id)
                 } else {
                     val all = semesterRepository.getVersions()
                     if (all.isEmpty()) {
@@ -137,40 +181,6 @@ class ScheduleViewModel @Inject constructor(
         viewModelScope.launch {
             semesterRepository.observeVersions().collect { list ->
                 _versions.value = list
-            }
-        }
-    }
-
-    private fun observeSchedules(versionId: Long) {
-        viewModelScope.launch {
-            combine(
-                observeScheduleUseCase(versionId),
-                _searchQuery
-            ) { raw, query ->
-                val subjectsMap = subjectRepository.getSubjects().associateBy { it.id }
-                val mapped = raw.map { schedule ->
-                    val subject = subjectsMap[schedule.subjectId]
-                    ScheduleMapper.domainToUi(
-                        domain = schedule,
-                        subjectName = subject?.name ?: "Unknown Subject",
-                        subjectColor = subject?.color ?: 0xFF9E9E9E.toInt(),
-                        subjectFaculty = subject?.facultyName
-                    )
-                }
-
-                if (query.isBlank()) {
-                    mapped
-                } else {
-                    mapped.filter {
-                        it.subjectName.contains(query, ignoreCase = true) ||
-                                (it.faculty?.contains(query, ignoreCase = true) == true) ||
-                                (it.room?.contains(query, ignoreCase = true) == true)
-                    }
-                }
-            }.catch {
-                _schedules.value = emptyList()
-            }.collect { list ->
-                _schedules.value = list
             }
         }
     }

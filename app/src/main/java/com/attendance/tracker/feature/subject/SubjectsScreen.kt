@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.subject
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +40,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,9 +74,9 @@ fun SubjectsScreen(
     onNavigateToBackfill: (Long) -> Unit,
     viewModel: SubjectViewModel = hiltViewModel()
 ) {
-    val subjectsState by viewModel.subjectsState.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val sortOption by viewModel.sortOption.collectAsState()
+    val subjectsState by viewModel.subjectsState.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val sortOption by viewModel.sortOption.collectAsStateWithLifecycle()
 
     var subjectToDelete by remember { mutableStateOf<SubjectWithStats?>(null) }
     var showSortMenu by remember { mutableStateOf(false) }
@@ -83,8 +85,8 @@ fun SubjectsScreen(
     subjectToDelete?.let { subject ->
         AlertDialog(
             onDismissRequest = { subjectToDelete = null },
-            title = { Text("Delete Subject") },
-            text = { Text("Are you sure you want to delete '${subject.name}'? All schedule and attendance logs will be permanently deleted.") },
+            title = { Text(stringResource(R.string.delete_subject)) },
+            text = { Text(stringResource(R.string.are_you_sure_you_want_2, subject.name)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -97,7 +99,7 @@ fun SubjectsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { subjectToDelete = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -138,7 +140,7 @@ fun SubjectsScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.onSearchQueryChange(it) },
-                    placeholder = { Text("Search subjects...") },
+                    placeholder = { Text(stringResource(R.string.search_subjects)) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
@@ -154,21 +156,21 @@ fun SubjectsScreen(
                         onDismissRequest = { showSortMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Alphabetical") },
+                            text = { Text(stringResource(R.string.alphabetical)) },
                             onClick = {
                                 viewModel.onSortOptionChange(SubjectSortOption.ALPHABETICAL)
                                 showSortMenu = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Recently Added") },
+                            text = { Text(stringResource(R.string.recently_added)) },
                             onClick = {
                                 viewModel.onSortOptionChange(SubjectSortOption.RECENTLY_ADDED)
                                 showSortMenu = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Attendance Goal") },
+                            text = { Text(stringResource(R.string.attendance_goal)) },
                             onClick = {
                                 viewModel.onSortOptionChange(SubjectSortOption.ATTENDANCE_GOAL)
                                 showSortMenu = false

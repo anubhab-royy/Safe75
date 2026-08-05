@@ -8,6 +8,7 @@ import com.attendance.tracker.data.local.database.dao.AttendanceDao
 import com.attendance.tracker.data.local.database.dao.ScheduleDao
 import com.attendance.tracker.data.local.database.dao.SemesterDao
 import com.attendance.tracker.data.local.database.dao.SubjectDao
+import com.attendance.tracker.core.util.Constants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,12 +28,15 @@ object DatabaseModule {
     fun provideAppDatabase(
         @ApplicationContext context: Context
     ): AppDatabase {
-        return Room.databaseBuilder(
+        val builder = Room.databaseBuilder(
             context,
             AppDatabase::class.java,
-            "attendance_tracker_db"
-        ).fallbackToDestructiveMigration(true)
-         .build()
+            Constants.DATABASE_NAME
+        )
+        if (com.attendance.tracker.BuildConfig.DEBUG) {
+            builder.fallbackToDestructiveMigration(true)
+        }
+        return builder.build()
     }
 
     @Provides

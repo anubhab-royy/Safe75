@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.welcome
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,7 +37,7 @@ fun WelcomeScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = onNavigateNext) {
-            Text(text = "Get Started")
+            Text(stringResource(R.string.get_started))
         }
     }
 }

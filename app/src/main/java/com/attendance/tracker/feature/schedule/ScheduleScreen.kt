@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.schedule
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -44,7 +46,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -74,10 +76,10 @@ fun ScheduleScreen(
     onNavigateToAddEditSchedule: (Long) -> Unit,
     viewModel: ScheduleViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val activeVersion by viewModel.activeVersion.collectAsState()
-    val versions by viewModel.versions.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val activeVersion by viewModel.activeVersion.collectAsStateWithLifecycle()
+    val versions by viewModel.versions.collectAsStateWithLifecycle()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val days = WeekDay.values()
@@ -91,8 +93,8 @@ fun ScheduleScreen(
     scheduleToDelete?.let { schedule ->
         AlertDialog(
             onDismissRequest = { scheduleToDelete = null },
-            title = { Text("Delete Class Slot") },
-            text = { Text("Are you sure you want to remove '${schedule.subjectName}' on ${schedule.dayOfWeek} at ${schedule.startTime}?") },
+            title = { Text(stringResource(R.string.delete_class_slot)) },
+            text = { Text(stringResource(R.string.are_you_sure_you_want_1, schedule.subjectName, schedule.dayOfWeek, schedule.startTime)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -105,7 +107,7 @@ fun ScheduleScreen(
             },
             dismissButton = {
                 TextButton(onClick = { scheduleToDelete = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -129,12 +131,12 @@ fun ScheduleScreen(
         var versionInput by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showCreateVersionDialog = false },
-            title = { Text("Create Timetable Version") },
+            title = { Text(stringResource(R.string.create_timetable_version)) },
             text = {
                 OutlinedTextField(
                     value = versionInput,
                     onValueChange = { versionInput = it },
-                    label = { Text("Version Name") },
+                    label = { Text(stringResource(R.string.version_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -148,12 +150,12 @@ fun ScheduleScreen(
                         }
                     }
                 ) {
-                    Text("Create")
+                    Text(stringResource(R.string.create))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCreateVersionDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -238,7 +240,7 @@ fun ScheduleScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
-                placeholder = { Text("Search by subject, room, or teacher...") },
+                placeholder = { Text(stringResource(R.string.search_by_subject_room_or)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
                 modifier = Modifier
@@ -429,9 +431,9 @@ private fun ManageVersionsDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Manage Timetable Versions")
+                Text(stringResource(R.string.manage_timetable_versions))
                 TextButton(onClick = onCreateNew) {
-                    Text("+ New")
+                    Text(stringResource(R.string.new_btn))
                 }
             }
         },
@@ -513,7 +515,7 @@ private fun ManageVersionsDialog(
                                             editingVersionId = null
                                         }
                                     ) {
-                                        Text("Save")
+                                        Text(stringResource(R.string.save))
                                     }
                                 }
                             }
@@ -525,7 +527,7 @@ private fun ManageVersionsDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.close))
             }
         }
     )

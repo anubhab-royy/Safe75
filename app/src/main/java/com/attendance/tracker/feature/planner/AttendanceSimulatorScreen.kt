@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.planner
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,7 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,9 +47,9 @@ fun AttendanceSimulatorScreen(
     onNavigateBack: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
-    val simPresent by viewModel.simPresentInput.collectAsState()
-    val simAbsent by viewModel.simAbsentInput.collectAsState()
-    val result by viewModel.simulationResult.collectAsState()
+    val simPresent by viewModel.simPresentInput.collectAsStateWithLifecycle()
+    val simAbsent by viewModel.simAbsentInput.collectAsStateWithLifecycle()
+    val result by viewModel.simulationResult.collectAsStateWithLifecycle()
 
     var presentStr by remember { mutableStateOf(simPresent.toString().takeIf { it != "0" } ?: "") }
     var absentStr by remember { mutableStateOf(simAbsent.toString().takeIf { it != "0" } ?: "") }
@@ -109,7 +111,7 @@ fun AttendanceSimulatorScreen(
                             viewModel.onSimPresentChange(count)
                         }
                     },
-                    label = { Text("Attend Next X") },
+                    label = { Text(stringResource(R.string.attend_next_x)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f)
                 )
@@ -123,7 +125,7 @@ fun AttendanceSimulatorScreen(
                             viewModel.onSimAbsentChange(count)
                         }
                     },
-                    label = { Text("Bunk Next Y") },
+                    label = { Text(stringResource(R.string.bunk_next_y)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f)
                 )

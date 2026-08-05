@@ -8,6 +8,7 @@ import com.attendance.tracker.domain.repository.BackupRepository
 import com.attendance.tracker.domain.repository.IntegrityRepository
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
@@ -37,4 +38,17 @@ abstract class BackupModule {
     abstract fun bindIntegrityRepository(
         impl: IntegrityRepositoryImpl
     ): IntegrityRepository
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideJson(): kotlinx.serialization.json.Json {
+            return kotlinx.serialization.json.Json {
+                prettyPrint = true
+                encodeDefaults = true
+                ignoreUnknownKeys = true
+                coerceInputValues = true
+            }
+        }
+    }
 }

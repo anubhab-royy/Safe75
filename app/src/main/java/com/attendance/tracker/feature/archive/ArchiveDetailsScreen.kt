@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.archive
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +31,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -61,7 +63,7 @@ fun ArchiveDetailsScreen(
     onNavigateBack: () -> Unit,
     viewModel: ArchiveViewModel = hiltViewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(archiveId) {
         viewModel.loadArchiveDetails(archiveId)
@@ -203,7 +205,7 @@ private fun ArchiveDetailsContent(
                         .fillMaxWidth()
                         .padding(horizontal = Dimensions.SpacingMedium)
                         .padding(bottom = Dimensions.SpacingMedium)
-                ) { Text("Restore Archived Semester") }
+                ) { Text(stringResource(R.string.restore_archived_semester)) }
             }
         }
 
