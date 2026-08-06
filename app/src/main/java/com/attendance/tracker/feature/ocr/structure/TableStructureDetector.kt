@@ -5,6 +5,7 @@ import org.opencv.core.Mat
 import org.opencv.core.MatOfPoint
 import org.opencv.core.Rect
 import org.opencv.imgproc.Imgproc
+import com.attendance.tracker.feature.ocr.diagnostics.OcrInstrumentation
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -60,6 +61,7 @@ class OpenCVGridDetector @Inject constructor() : TableStructureDetector {
         verticalLines: Mat,
         gridMask: Mat
     ): TableGridModel {
+        val gridStart = System.nanoTime()
         // Crop horizontal, vertical, and combined grid masks to the table's region
         val subHoriz = Mat(horizontalLines, tableRect)
         val subVert = Mat(verticalLines, tableRect)
@@ -153,6 +155,14 @@ class OpenCVGridDetector @Inject constructor() : TableStructureDetector {
 
         val rowsCount = maxOf(1, rowBoundaries.size - 1)
         val colsCount = maxOf(1, colBoundaries.size - 1)
+
+        OcrInstrumentation.i(
+            OcrInstrumentation.TAG_GRID,
+            "GRID tableRect=(${tableRect.x},${tableRect.y},${tableRect.width},${tableRect.height}) " +
+                "rows=$rowsCount cols=$colsCount cells=${cells.size} " +
+                "rowBoundaries=${rowBoundaries.joinToString()} colBoundaries=${colBoundaries.joinToString()} " +
+                "elapsed=${OcrInstrumentation.elapsedMs(gridStart)}ms"
+        )
 
         return TableGridModel(rows = rowsCount, cols = colsCount, cells = cells)
     }

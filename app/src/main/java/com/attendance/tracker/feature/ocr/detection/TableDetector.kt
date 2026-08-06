@@ -6,6 +6,7 @@ import org.opencv.core.MatOfPoint
 import org.opencv.core.Rect
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
+import com.attendance.tracker.feature.ocr.diagnostics.OcrInstrumentation
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -59,6 +60,7 @@ class TableDetector @Inject constructor() {
      * @return List of [Rect] representing table boundaries.
      */
     fun detectTables(threshMat: Mat, gridMasks: GridMasks): List<Rect> {
+        val tableStart = System.nanoTime()
         val contours = ArrayList<MatOfPoint>()
         val hierarchy = Mat()
         
@@ -80,6 +82,13 @@ class TableDetector @Inject constructor() {
 
         hierarchy.release()
         contours.forEach { it.release() }
+
+        OcrInstrumentation.i(
+            OcrInstrumentation.TAG_TABLE,
+            "TABLE tables=${tables.size} image=${threshMat.cols()}x${threshMat.rows()} " +
+                "rects=${tables.joinToString(prefix = "[", postfix = "]") { "(${it.x},${it.y},${it.width},${it.height})" }} " +
+                "elapsed=${OcrInstrumentation.elapsedMs(tableStart)}ms"
+        )
 
         return tables
     }

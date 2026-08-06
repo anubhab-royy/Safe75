@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import com.attendance.tracker.BuildConfig
 import com.attendance.tracker.core.logger.Logger
+import com.attendance.tracker.feature.ocr.diagnostics.OcrInstrumentation
 import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
@@ -87,6 +88,7 @@ class ImageProcessor @Inject constructor() {
      */
     fun loadMatFromUri(context: Context, uri: Uri): Result<Mat> {
         return try {
+            val decodeStart = System.nanoTime()
             val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeStream(inputStream, null, bounds)
@@ -95,18 +97,26 @@ class ImageProcessor @Inject constructor() {
             val width = bounds.outWidth
             val height = bounds.outHeight
             if (width <= 0 || height <= 0) {
+                OcrInstrumentation.i(OcrInstrumentation.TAG_DECODE, "DECODE FAIL uri=$uri bounds=${width}x${height}")
                 return Result.failure(Exception("Failed to decode image bounds from URI"))
             }
 
             val sampleSize = computeSampleSize(width, height)
+            OcrInstrumentation.i(OcrInstrumentation.TAG_DECODE, "DECODE uri=$uri source=${width}x${height} sampleSize=$sampleSize")
 
             val decodeStream: InputStream? = context.contentResolver.openInputStream(uri)
             val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
             val bitmap = BitmapFactory.decodeStream(decodeStream, null, options)
             decodeStream?.close()
             if (bitmap == null) {
+                OcrInstrumentation.i(OcrInstrumentation.TAG_DECODE, "DECODE FAIL bitmap null uri=$uri")
                 return Result.failure(Exception("Failed to decode bitmap from URI"))
             }
+            OcrInstrumentation.i(
+                OcrInstrumentation.TAG_DECODE,
+                "DECODE bitmap=${bitmap.width}x${bitmap.height} config=${bitmap.config} bytes=${bitmap.allocationByteCount} " +
+                    "rotation=NOT_APPLIED elapsed=${OcrInstrumentation.elapsedMs(decodeStart)}ms"
+            )
             Logger.i("ImageProcessor", "decoded ${bitmap.width}x${bitmap.height} from source ${width}x${height}")
             if (BuildConfig.DEBUG) {
                 runCatching {
@@ -150,8 +160,10 @@ class ImageProcessor @Inject constructor() {
         val stddevG = MatOfDouble()
         Core.meanStdDev(gray, meanG, stddevG)
         val contrast = stddevG.toArray()[0]
+        OcrInstrumentation.i(OcrInstrumentation.TAG_QUALITY, "QUALITY contrast=$contrast")
         if (contrast < 15.0) {
             gray.release()
+            OcrInstrumentation.i(OcrInstrumentation.TAG_QUALITY, "QUALITY FAIL low contrast ($contrast)")
             return QualityCheckResult.Fail("Image contrast is too low ($contrast). Please ensure the timetable is clear and well-lit.")
         }
 
@@ -168,9 +180,11 @@ class ImageProcessor @Inject constructor() {
 
         // Threshold for blurriness: lower values mean more blurry
         if (variance < 60.0) {
+            OcrInstrumentation.i(OcrInstrumentation.TAG_QUALITY, "QUALITY FAIL blur variance ($variance)")
             return QualityCheckResult.Fail("Image is too blurry ($variance). Please hold the device steady and retake the photo.")
         }
 
+        OcrInstrumentation.i(OcrInstrumentation.TAG_QUALITY, "QUALITY PASS resolution=${width}x${height} contrast=$contrast blurVariance=$variance")
         return QualityCheckResult.Pass
     }
 
@@ -178,6 +192,11 @@ class ImageProcessor @Inject constructor() {
      * Preprocesses the image: Grayscale, bilateral filter denoise, deskew, and thresholding.
      */
     fun preprocess(mat: Mat): PreprocessedImage {
+        val prepStart = System.nanoTime()
+        OcrInstrumentation.i(
+            OcrInstrumentation.TAG_PREPROCESS,
+            "PREPROCESS input=${mat.cols()}x${mat.rows()} channels=${mat.channels()} type=${mat.type()}"
+        )
         val gray = Mat()
         if (mat.channels() > 1) {
             Imgproc.cvtColor(mat, gray, Imgproc.COLOR_BGR2GRAY)
@@ -219,6 +238,13 @@ class ImageProcessor @Inject constructor() {
             mat.copyTo(processedOriginal)
         }
 
+        OcrInstrumentation.i(
+            OcrInstrumentation.TAG_PREPROCESS,
+            "PREPROCESS output original=${processedOriginal.cols()}x${processedOriginal.rows()} " +
+                "gray=${deskewed.cols()}x${deskewed.rows()} thresh=${thresh.cols()}x${thresh.rows()} " +
+                "elapsed=${OcrInstrumentation.elapsedMs(prepStart)}ms"
+        )
+
         return PreprocessedImage(processedOriginal, deskewed, thresh)
     }
 
@@ -257,6 +283,7 @@ class ImageProcessor @Inject constructor() {
 
         // Only rotate if the angle is significant and within reason
         if (abs(angle) > 0.5 && abs(angle) < 15.0) {
+            OcrInstrumentation.i(OcrInstrumentation.TAG_PREPROCESS, "PREPROCESS deskew APPLIED angle=$angle")
             val rotMat = Imgproc.getRotationMatrix2D(rect.center, angle, 1.0)
             val deskewed = Mat()
             Imgproc.warpAffine(
@@ -271,6 +298,7 @@ class ImageProcessor @Inject constructor() {
             return deskewed
         }
 
+        OcrInstrumentation.i(OcrInstrumentation.TAG_PREPROCESS, "PREPROCESS deskew SKIPPED angle=$angle")
         return gray
     }
 }

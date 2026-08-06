@@ -34,6 +34,7 @@ class Sprint1RegressionTest {
 
     @Test
     fun testMatLifecycle_releasesAllIntermediateMatsOnFailure() = runTest {
+        com.attendance.tracker.core.logger.Logger.setEngine(com.attendance.tracker.core.logger.NoOpLogEngine())
         // Setup mocks
         val context = mock(Context::class.java)
         val uri = mock(Uri::class.java)

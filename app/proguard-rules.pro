@@ -42,7 +42,21 @@
 }
 
 # --- ML Kit ---------------------------------------------------------------
-# ML Kit bundles its own rules; keep parser/scheduler entry points.
+# REQUIRED: R8 obfuscates ML Kit's internal runtime classes, which makes
+# TextRecognition.process() throw a NullPointerException ("getClass() on a null
+# object reference") in minified release builds (verified via Phase B2 device
+# logs + release mapping: 322+ renamed classes across mlkit_vision_common and
+# mlkit_vision_text_common). Keep ML Kit's public API and its internal runtime
+# packages referenced during text recognition.
+-keep class com.google.mlkit.common.** { *; }
+-keep class com.google.mlkit.vision.common.** { *; }
+-keep class com.google.mlkit.vision.text.** { *; }
+-keep class com.google.android.gms.internal.mlkit_common.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_common.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_text_common.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_text_bundled_common.** { *; }
+
+# App-side OCR entry points (ML Kit callers).
 -keep class com.attendance.tracker.feature.ocr.** { *; }
 
 # --- OpenCV ---------------------------------------------------------------
