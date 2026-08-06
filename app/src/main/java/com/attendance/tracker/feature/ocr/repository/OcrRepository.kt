@@ -17,6 +17,7 @@ import com.attendance.tracker.feature.ocr.extraction.CellExtractor
 import com.attendance.tracker.feature.ocr.recognition.OcrRecognizer
 import com.attendance.tracker.feature.ocr.parser.SemanticParser
 import com.attendance.tracker.core.common.DispatcherProvider
+import com.attendance.tracker.core.opencv.OpenCVInitializer
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import javax.inject.Inject
@@ -34,7 +35,8 @@ class OcrRepository @Inject constructor(
     private val cellExtractor: CellExtractor,
     private val ocrRecognizer: OcrRecognizer,
     private val semanticParser: SemanticParser,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val openCVInitializer: OpenCVInitializer
 ) {
     /**
      * Scans an image, runs quality check, segments table cells, performs OCR cell-by-cell,
@@ -42,6 +44,9 @@ class OcrRepository @Inject constructor(
      */
     suspend fun importTimetable(context: Context, uri: Uri): Result<List<OcrTimetableRow>> =
         withContext(dispatcherProvider.default) {
+            if (!openCVInitializer.ensureLoaded()) {
+                return@withContext Result.failure(Exception("OpenCV is not available on this device."))
+            }
             val matResult = imageProcessor.loadMatFromUri(context, uri)
             if (matResult.isFailure) {
                 return@withContext Result.failure(

@@ -36,6 +36,9 @@ class OcrRecognizer @Inject constructor(
 
         for (cell in extractedCells) {
             val result = ocrScanner.scanBitmap(cell.bitmap)
+            // The cell bitmap has been consumed by ML Kit and is not referenced
+            // anywhere downstream, so it is recycled immediately.
+            cell.bitmap.recycle()
             val textObj = result.getOrNull()
             val text = textObj?.text?.trim().orEmpty()
 

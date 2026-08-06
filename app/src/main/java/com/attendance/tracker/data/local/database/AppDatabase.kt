@@ -27,7 +27,7 @@ import com.attendance.tracker.data.local.database.entity.SubjectEntity
         ArchiveEntity::class
     ],
     version = 3,
-    exportSchema = false
+    exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {

@@ -11,8 +11,10 @@ import java.util.Locale
  * Leveraging modern java.time APIs available in API 26+.
  */
 object TimeUtils {
-    private val defaultTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
-    private val displayTimeFormatter = DateTimeFormatter.ofPattern("hh:mm a", Locale.getDefault())
+    // Data format used for OCR parsing, storage, and backup round-trips.
+    // Kept locale-independent (Locale.ROOT) to avoid digit/format drift in
+    // locales that use non-ASCII digits.
+    private val defaultTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
 
     /**
      * Formats a [LocalTime] into a readable string using the specified pattern.
@@ -22,7 +24,7 @@ object TimeUtils {
             val formatter = DateTimeFormatter.ofPattern(pattern, Locale.getDefault())
             time.format(formatter)
         } catch (e: Exception) {
-            time.format(displayTimeFormatter)
+            time.format(displayTimeFormatter())
         }
     }
 
@@ -49,4 +51,11 @@ object TimeUtils {
     fun calculateDurationInMinutes(startTime: LocalTime, endTime: LocalTime): Long {
         return Duration.between(startTime, endTime).toMinutes()
     }
+
+    /**
+     * Returns a locale-aware formatter for displaying times. Created on demand
+     * so display follows the current locale even if it changes at runtime.
+     */
+    fun displayTimeFormatter(): DateTimeFormatter =
+        DateTimeFormatter.ofPattern("hh:mm a", Locale.getDefault())
 }

@@ -31,6 +31,11 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.attendance.tracker"
     compileSdk = 36
+    ksp {
+        // Export Room schemas so migrations can be versioned and validated with
+        // MigrationTestHelper (Phase A4 production migration strategy).
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
     defaultConfig {
         applicationId = "com.attendance.tracker"
         minSdk = 26
@@ -87,6 +92,12 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+
+    sourceSets {
+        // Package exported Room schemas into the androidTest APK so
+        // MigrationTestHelper can validate registered migrations.
+        getByName("androidTest").assets.srcDirs(files("$projectDir/schemas"))
     }
 
     lint {
@@ -182,4 +193,7 @@ dependencies {
 
     // UI Automator for accessibility/widget smoke tests
     androidTestImplementation(libs.androidx.test.uiautomator)
+
+    // Room migration validation (MigrationTestHelper)
+    androidTestImplementation(libs.room.testing)
 }

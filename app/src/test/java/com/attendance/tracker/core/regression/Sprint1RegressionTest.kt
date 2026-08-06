@@ -3,6 +3,7 @@ package com.attendance.tracker.core.regression
 import android.content.Context
 import android.net.Uri
 import com.attendance.tracker.core.common.DispatcherProvider
+import com.attendance.tracker.core.opencv.OpenCVInitializer
 import com.attendance.tracker.feature.ocr.detection.GridMasks
 import com.attendance.tracker.feature.ocr.detection.TableDetector
 import com.attendance.tracker.feature.ocr.extraction.CellExtractor
@@ -45,6 +46,8 @@ class Sprint1RegressionTest {
         val cellExtractor = mock(CellExtractor::class.java)
         val ocrRecognizer = mock(OcrRecognizer::class.java)
         val semanticParser = mock(SemanticParser::class.java)
+        val openCVInitializer = mock(OpenCVInitializer::class.java)
+        `when`(openCVInitializer.ensureLoaded()).thenReturn(true)
 
         val dispatcherProvider = object : DispatcherProvider {
             override val main = UnconfinedTestDispatcher()
@@ -54,7 +57,7 @@ class Sprint1RegressionTest {
 
         val ocrRepo = OcrRepository(
             scanner, parser, imageProcessor, tableDetector, gridDetector,
-            cellExtractor, ocrRecognizer, semanticParser, dispatcherProvider
+            cellExtractor, ocrRecognizer, semanticParser, dispatcherProvider, openCVInitializer
         )
 
         // Mock Mat creations

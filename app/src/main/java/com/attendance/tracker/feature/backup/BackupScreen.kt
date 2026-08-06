@@ -1,6 +1,7 @@
 package com.attendance.tracker.feature.backup
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +37,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -73,6 +75,13 @@ fun BackupScreen(
     viewModel: BackupViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Refresh the current snapshot whenever this screen becomes visible again
+    // (e.g. after returning from the restore flow or a maintenance screen).
+    LifecycleResumeEffect(Unit) {
+        viewModel.loadCurrentSnapshot()
+        onPauseOrDispose { }
+    }
 
     // Export picker
     val exportLauncher = rememberLauncherForActivityResult(
@@ -276,6 +285,7 @@ private fun MaintenanceRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(vertical = Dimensions.SpacingSmall),
         verticalAlignment = Alignment.CenterVertically
     ) {

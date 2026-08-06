@@ -45,6 +45,18 @@
 # ML Kit bundles its own rules; keep parser/scheduler entry points.
 -keep class com.attendance.tracker.feature.ocr.** { *; }
 
+# --- OpenCV ---------------------------------------------------------------
+# REQUIRED: the OpenCV 4.9.0 AAR ships NO consumer ProGuard rules (verified by
+# inspecting the artifact), yet its Java wrapper declares `native` methods
+# (e.g. org.opencv.core.Mat.n_Mat()) that are resolved at runtime by the JNI
+# name-mangling convention against symbols exported from libopencv_java4.so
+# (e.g. Java_org_opencv_core_Mat_n_1Mat). Obfuscating org.opencv.* renames the
+# class and its native method declarations, breaking symbol resolution and
+# causing UnsatisfiedLinkError on the first OCR operation in minified builds.
+# This rule is scoped to the third-party org.opencv package only (fully owned
+# by the library); no application classes are affected.
+-keep class org.opencv.** { *; }
+
 # --- Glance App Widget ----------------------------------------------------
 # Glance widget classes must be referenced from the manifest by name.
 -keep class com.attendance.tracker.feature.widget.** { *; }

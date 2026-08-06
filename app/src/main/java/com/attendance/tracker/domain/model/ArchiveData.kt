@@ -34,5 +34,9 @@ data class ArchiveData(
     val cancelledCount: Int,
     val overallPercentage: Double,
     /** Per-subject breakdown; populated on-demand when opening archive details. */
-    val subjectStats: List<ArchiveSubjectStat> = emptyList()
+    val subjectStats: List<ArchiveSubjectStat> = emptyList(),
+    /** Count of schedule slots captured in the snapshot. */
+    val scheduleCount: Int = 0,
+    /** Count of attendance records captured in the snapshot. */
+    val attendanceCount: Int = 0
 )

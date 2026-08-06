@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import com.attendance.tracker.BuildConfig
+import com.attendance.tracker.core.logger.Logger
 import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
@@ -36,19 +38,87 @@ data class PreprocessedImage(
 @Singleton
 class ImageProcessor @Inject constructor() {
 
+    companion object {
+        /**
+         * Longest-edge cap for OCR input. Modern phone screenshots (12-50 MP)
+         * far exceed what OCR grid detection and ML Kit text recognition can use.
+         * Decoding with a power-of-two sample size lands the longest edge in
+         * (MAX_LONGEST_EDGE / 2, MAX_LONGEST_EDGE] while never upscaling.
+         */
+        const val MAX_LONGEST_EDGE = 2048
+
+        /**
+         * Floor mirroring the quality-check resolution gate ([checkQuality] rejects
+         * images shorter than 400px on either edge). Downsampling must not push a
+         * sane image below this and newly fail the low-resolution gate.
+         */
+        const val MIN_SHORTEST_EDGE = 400
+    }
+
     /**
-     * Loads a Bitmap from a content URI and converts it to an OpenCV Mat.
+     * Chooses a power-of-two decode sample size so the resulting longest edge is
+     * at most [maxLongestEdge] (and at least half of it). If that would shrink the
+     * shortest edge below [minShortestEdge], a smaller sample size is used instead,
+     * keeping realistic timetable screenshots above the quality-check resolution floor.
+     */
+    internal fun computeSampleSize(
+        width: Int,
+        height: Int,
+        maxLongestEdge: Int = MAX_LONGEST_EDGE,
+        minShortestEdge: Int = MIN_SHORTEST_EDGE
+    ): Int {
+        var sample = 1
+        var longest = maxOf(width, height)
+        while (longest / sample > maxLongestEdge) {
+            sample *= 2
+        }
+        val shortestScaled = minOf(width, height) / sample
+        if (shortestScaled < minShortestEdge && sample > 1) {
+            sample /= 2
+        }
+        return sample
+    }
+
+    /**
+     * Loads a Bitmap from a content URI and converts it to an OpenCV Mat,
+     * decoding at a downsampled resolution when the source exceeds the OCR
+     * working resolution. The intermediate Bitmap is recycled immediately
+     * after its pixels are copied into the Mat.
      */
     fun loadMatFromUri(context: Context, uri: Uri): Result<Mat> {
         return try {
             val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
-            val bitmap = BitmapFactory.decodeStream(inputStream)
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeStream(inputStream, null, bounds)
             inputStream?.close()
+
+            val width = bounds.outWidth
+            val height = bounds.outHeight
+            if (width <= 0 || height <= 0) {
+                return Result.failure(Exception("Failed to decode image bounds from URI"))
+            }
+
+            val sampleSize = computeSampleSize(width, height)
+
+            val decodeStream: InputStream? = context.contentResolver.openInputStream(uri)
+            val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+            val bitmap = BitmapFactory.decodeStream(decodeStream, null, options)
+            decodeStream?.close()
             if (bitmap == null) {
                 return Result.failure(Exception("Failed to decode bitmap from URI"))
             }
+            Logger.i("ImageProcessor", "decoded ${bitmap.width}x${bitmap.height} from source ${width}x${height}")
+            if (BuildConfig.DEBUG) {
+                runCatching {
+                    val f = java.io.File(context.cacheDir, "ocr_input.png")
+                    context.contentResolver.openOutputStream(android.net.Uri.fromFile(f))?.use { os ->
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, os)
+                    }
+                }
+            }
             val mat = Mat()
             Utils.bitmapToMat(bitmap, mat)
+            bitmap.recycle()
             Result.success(mat)
         } catch (e: Exception) {
             Result.failure(e)
@@ -120,9 +190,12 @@ class ImageProcessor @Inject constructor() {
         Imgproc.bilateralFilter(gray, denoised, 9, 75.0, 75.0)
         gray.release()
 
-        // 2. Auto Deskew
+        // 2. Auto Deskew. When no rotation is applied, [deskew] returns the same
+        //    Mat instance (no copy), so it must not be released separately.
         val deskewed = deskew(denoised)
-        denoised.release()
+        if (deskewed !== denoised) {
+            denoised.release()
+        }
 
         // 3. Adaptive Thresholding to binarize the image (clean text and grids)
         val thresh = Mat()
@@ -151,6 +224,7 @@ class ImageProcessor @Inject constructor() {
 
     /**
      * Detects skew angle and rotates the image to straighten it.
+     * Returns the input Mat itself when no rotation is applied (no copy is made).
      */
     private fun deskew(gray: Mat): Mat {
         val binary = Mat()
@@ -159,16 +233,19 @@ class ImageProcessor @Inject constructor() {
         // Find non-zero points (text pixels) to compute orientation
         val points = MatOfPoint()
         Core.findNonZero(binary, points)
-        
+
         if (points.empty()) {
             binary.release()
             points.release()
-            return gray.clone()
+            return gray
         }
 
-        val points2f = MatOfPoint2f(*points.toArray())
+        // Convert int points to float without materializing a Java Point array
+        // (native conversion avoids a large Java-heap allocation for dense text).
+        val points2f = MatOfPoint2f()
+        points.convertTo(points2f, CvType.CV_32FC2)
         val rect = Imgproc.minAreaRect(points2f)
-        
+
         var angle = rect.angle
         if (angle < -45) {
             angle += 90.0
@@ -194,6 +271,6 @@ class ImageProcessor @Inject constructor() {
             return deskewed
         }
 
-        return gray.clone()
+        return gray
     }
 }

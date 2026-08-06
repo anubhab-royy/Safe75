@@ -249,6 +249,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     private fun ArchiveEntity.toDomainWithSubjectStats(): ArchiveData {
         val subjects = deserializer.deserializeSubjects(subjectsJson)
         val attendance = deserializer.deserializeAttendance(attendanceJson)
+        val schedules = deserializer.deserializeSchedules(schedulesJson)
 
         val stats = subjects.map { subject ->
             val subjectAttendance = attendance.filter { it.subjectId == subject.id }
@@ -281,7 +282,9 @@ class ArchiveRepositoryImpl @Inject constructor(
             absentCount = absentCount,
             cancelledCount = cancelledCount,
             overallPercentage = overallPercentage,
-            subjectStats = stats
+            subjectStats = stats,
+            scheduleCount = schedules.size,
+            attendanceCount = attendance.size
         )
     }
 }

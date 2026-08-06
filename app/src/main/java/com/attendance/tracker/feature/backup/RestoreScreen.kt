@@ -185,12 +185,13 @@ fun RestoreScreen(
     }
 
     // 2. Restore options dialog.
-    if (state.showRestoreOptions && preview != null && selectedImportUri != null) {
+    val importUri = selectedImportUri
+    if (state.showRestoreOptions && preview != null && importUri != null) {
         RestoreOptionsDialog(
             previewData = preview,
             options = state.restoreOptions,
             onOptionsChanged = viewModel::updateRestoreOptions,
-            onConfirm = { viewModel.importBackup(selectedImportUri!!, state.restoreOptions) },
+            onConfirm = { viewModel.importBackup(importUri, state.restoreOptions) },
             onDismiss = viewModel::dismissRestoreDialog
         )
     }

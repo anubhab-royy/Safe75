@@ -94,7 +94,8 @@ class OCRReviewViewModelTest {
                 com.attendance.tracker.feature.ocr.parser.HeaderInterpreter(),
                 kotlinx.serialization.json.Json { prettyPrint = true }
             ),
-            dispatcherProvider = testDispatcherProvider
+            dispatcherProvider = testDispatcherProvider,
+            openCVInitializer = com.attendance.tracker.core.opencv.OpenCVInitializer()
         )
 
         viewModel = OcrReviewViewModel(

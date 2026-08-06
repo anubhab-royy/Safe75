@@ -123,16 +123,16 @@ fun ArchiveDetailsScreen(
         }
     }
 
-    if (state.showRestoreOptions && state.selectedArchive != null) {
-        val archive = state.selectedArchive!!
+    val archive = state.selectedArchive
+    if (state.showRestoreOptions && archive != null) {
         RestoreOptionsDialog(
             options = state.restoreOptions,
             onOptionsChanged = viewModel::updateRestoreOptions,
             onConfirm = { viewModel.restoreArchive(archive.id) },
             onDismiss = viewModel::dismissRestoreOptions,
             subjectCount = archive.subjectStats.size,
-            scheduleCount = archive.totalClasses,
-            attendanceCount = archive.totalClasses,
+            scheduleCount = archive.scheduleCount,
+            attendanceCount = archive.attendanceCount,
             showSemesterVersions = false,
             showSettings = false,
             showPreviewSummary = true,

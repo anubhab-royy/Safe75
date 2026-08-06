@@ -127,7 +127,8 @@ fun AttendanceDetailsScreen(
             )
         }
     ) { paddingValues ->
-        if (record == null) {
+        val currentRecord = record
+        if (currentRecord == null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -141,8 +142,7 @@ fun AttendanceDetailsScreen(
                 }
             }
         } else {
-            val targetRecord = record!!
-            val subjectName = subjectsMap[targetRecord.subjectId]?.name ?: "Unknown Subject"
+            val subjectName = subjectsMap[currentRecord.subjectId]?.name ?: "Unknown Subject"
 
             Column(
                 modifier = Modifier
@@ -168,7 +168,7 @@ fun AttendanceDetailsScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Date: ${targetRecord.date}",
+                            text = "Date: ${currentRecord.date}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                         )
@@ -235,10 +235,10 @@ fun AttendanceDetailsScreen(
                         onClick = {
                             coroutineScope.launch {
                                 val success = viewModel.updateAttendance(
-                                    id = targetRecord.id,
-                                    subjectId = targetRecord.subjectId,
-                                    scheduleId = targetRecord.scheduleId,
-                                    date = targetRecord.date,
+                                    id = currentRecord.id,
+                                    subjectId = currentRecord.subjectId,
+                                    scheduleId = currentRecord.scheduleId,
+                                    date = currentRecord.date,
                                     status = status,
                                     remarks = remarks
                                 )

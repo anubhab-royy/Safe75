@@ -64,7 +64,7 @@
             android:exported="false"
             tools:node="merge">
             <meta-data
-                android:name="androidx.work.impl.utils.initialize.WorkManagerInitializer"
+                android:name="androidx.work.WorkManagerInitializer"
                 tools:node="remove" />
         </provider>
     </application>
