@@ -12,6 +12,7 @@ import com.attendance.tracker.data.local.database.dao.AttendanceDao
 import com.attendance.tracker.data.local.database.entity.SubjectEntity
 import com.attendance.tracker.data.local.database.entity.ScheduleEntity
 import com.attendance.tracker.data.local.database.entity.AttendanceEntity
+import com.attendance.tracker.data.local.database.entity.BugReportQueueEntity
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -94,5 +95,41 @@ class AppDatabaseTest {
         val list = scheduleDao.getSchedulesForVersion(1L)
         assertEquals(1, list.size)
         assertEquals("Room 303", list[0].room)
+    }
+
+    @Test
+    fun writeBugReportQueueAndRead() = runBlocking {
+        val entity = BugReportQueueEntity(
+            reportId = "local-report-1",
+            fingerprint = "fingerprint-1",
+            timestamp = 1L,
+            appVersion = "1.0.0",
+            versionCode = 1,
+            buildType = "debug",
+            androidVersion = "15",
+            sdkVersion = 35,
+            deviceManufacturer = "Google",
+            deviceModel = "Pixel",
+            cpuAbi = "arm64-v8a",
+            locale = "en-US",
+            crashReportId = null,
+            userDescription = "The dashboard is blank",
+            diagnosticsMetadata = "{}",
+            screenshotPath = null,
+            screenshotContentType = null,
+            remoteReportId = null,
+            status = "QUEUED",
+            retryCount = 0,
+            createdAt = 1L,
+            updatedAt = 1L,
+            lastError = null
+        )
+
+        db.bugReportQueueDao().insert(entity)
+
+        val loaded = db.bugReportQueueDao().findById("local-report-1")
+        assertNotNull(loaded)
+        assertEquals("The dashboard is blank", loaded?.userDescription)
+        assertEquals("QUEUED", loaded?.status)
     }
 }

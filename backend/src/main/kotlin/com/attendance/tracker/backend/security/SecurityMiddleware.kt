@@ -101,7 +101,8 @@ val SecurityAuthenticationPlugin = createRouteScopedPlugin(
 
         // 7. Signature verification (HMAC-SHA256)
         val method = call.request.local.method.value
-        val requestBody = if (method == "POST" || method == "PUT") {
+        val isMultipart = call.request.headers["Content-Type"]?.contains("multipart", ignoreCase = true) == true
+        val requestBody = if ((method == "POST" || method == "PUT") && !isMultipart) {
             call.receiveText()
         } else {
             ""

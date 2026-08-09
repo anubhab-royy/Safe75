@@ -10,20 +10,22 @@
 
 ## 1. Executive Summary
 
-Safe75 is a fully offline, single-activity Android app built with
+Safe75 is an offline-first, single-activity Android app built with
 Kotlin + Jetpack Compose (Material 3), Hilt, Room, DataStore, WorkManager,
 kotlinx.serialization, and ML Kit OCR. It delivers all 8 planned roadmap phases
 (subject/schedule/attendance management, attendance intelligence, reminders,
 data management/backup, home-screen widget, baseline profile, release hardening).
 
 The codebase is well-organized (clean feature/domain/data/core layering),
-compiles cleanly, passes 116 unit tests, passes `lintDebug`, and produces a
-signed, R8-minified release APK (40.9 MB). No critical bugs were found.
+compiles cleanly, passes the Android unit suite and `lintDebug`, and produces an
+R8-minified release APK. Explicit bug reports use a durable Room queue and
+HMAC-authenticated backend uploads. No critical code defects were found in the
+available local validation environment.
 
-The audit identified **2 HIGH, 6 MEDIUM, and 12 LOW** findings. Both HIGH
-findings are privacy-related (Android Auto Backup exposure and plaintext
-backup files) and should be addressed before or shortly after release. No
-blocking defects prevent shipping v1.0.0.
+The audit identified **1 HIGH, 6 MEDIUM, and 12 LOW** findings. The Android
+Auto Backup exposure has been resolved; the remaining HIGH finding is the
+documented plaintext user-selected backup export limitation. Live device and
+MongoDB/R2 certification remain deployment-gate checks.
 
 ---
 
@@ -215,11 +217,13 @@ blockers, but Q1 (i18n) is the largest quality gap.
 
 ### 7.1 Confirmed positive controls
 
-- **Zero network code** — the app is fully offline (no internet permission in
-  manifest; grep for network calls: none). Data cannot exfiltrate.
+- **Network access is scoped** — the app uses network access for device
+  enrollment and explicit bug-report uploads only. Attendance records are not
+  included in the submission model.
 - **Logger is a release no-op** and never logs PII: `Logger.kt` uses
   `DefaultLogEngine` only in DEBUG builds, `NoOpLogEngine` in release. The
-  only 3 call sites log generic messages/exceptions, never names or data.
+  network interceptor is limited to BASIC request logging and never logs
+  descriptions, diagnostics, screenshots, or HMAC headers.
 - **All broadcast receivers are `exported="false"`** (`AttendanceActionReceiver`,
   `AttendanceWidgetReceiver`, `WidgetSyncReceiver`); all `PendingIntent`s use
   `FLAG_IMMUTABLE`. No custom permissions needed.
@@ -232,14 +236,15 @@ blockers, but Q1 (i18n) is the largest quality gap.
 
 | ID | Severity | Finding | Location |
 | :-- | :--- | :--- | :--- |
-| S1 | **HIGH** | **Android Auto Backup exposes unencrypted PII to Google.** `allowBackup="true"` (`AndroidManifest.xml:10`) with **no** `android:fullBackupContent`/`android:dataExtractionRules` attributes. `res/xml/backup_rules.xml` and `data_extraction_rules.xml` are Android Studio template stubs (not referenced, one contains a leftover `TODO` comment). Result: the entire internal storage — Room DB with subject/faculty names, attendance remarks, rooms — and DataStore are eligible for cloud auto-backup under default rules. | `AndroidManifest.xml:10`; `res/xml/backup_rules.xml:1-13`; `data_extraction_rules.xml:8` |
+| S1 | **RESOLVED** | Automatic Android app-data backup is disabled and explicit cloud/device-transfer exclusion rules are registered. | `AndroidManifest.xml`; `res/xml/backup_rules.xml`; `res/xml/data_extraction_rules.xml` |
 | S2 | **HIGH** | **Backups are plaintext JSON containing PII, with no integrity/authenticity protection.** `BackupSerializer.kt:17-21` pretty-prints JSON (subject names, `facultyName`, `teacherOverride`/`room`, attendance `remarks`). No encryption (no SQLCipher/crypto deps) and no checksum/HMAC/signature — a file can be forged or modified and `BackupValidator` only checks structure. If the user picks Downloads/Drive, PII lands there unprotected. | `core/backup/BackupSerializer.kt`, `BackupData.kt`, `BackupValidator.kt` |
 | S3 | MEDIUM | **`AttendanceActionReceiver` runs a fire-and-forget coroutine without `goAsync()`** and discards the validation result — the process may be killed mid-write, and duplicate/failed marks are silently swallowed. | `AttendanceActionReceiver.kt:41-50`, `:49` |
 | S4 | LOW/MED | Notification channels/titles and all UI strings are hardcoded English (user-visible in OS Settings). Already recorded as Q1. | `TrackerNotificationManager.kt:19-66` |
 
-**Verdict: Strong baseline (offline, no PII logging, SAF-only I/O, locked-down**
-**receivers). S1 and S2 should be resolved before/soon after release. S3 is a**
-**robustness fix for a future release.**
+**Certification update:** Strong baseline with scoped network access, no release
+**PII logging, disabled automatic backup, SAF-only user backup I/O, and locked-down**
+**receivers. S2 remains a documented limitation of user-selected plaintext backup**
+**exports; S3 remains a future robustness item.**
 
 ---
 
@@ -390,14 +395,16 @@ resolve the S1 auto-backup exposure.
 
 ## 14. Verdict
 
-**APPROVED for v1.0.0 release**, subject to two privacy follow-ups:
+**APPROVED for v1.0.0 release**, subject to deployment-gate validation:
 
-1. **S1 (HIGH):** Resolve Android Auto Backup exposure before store submission
-   — either wire `dataExtractionRules`/`fullBackupContent` to exclude the Room
-   DB + DataStore, or explicitly document the trade-off in the privacy policy.
-2. **S2 (HIGH):** Document the plaintext-backup trade-off in the privacy policy
-   and/or plan encryption post-1.0.
+1. **S1:** Resolved by disabling automatic backup and registering explicit
+   `dataExtractionRules`/`fullBackupContent` exclusions.
+2. **S2 (HIGH):** The plaintext user-selected backup trade-off is documented
+   in the privacy policy and remains a known limitation.
+3. Complete physical-device and live MongoDB/Cloudflare R2 validation with the
+   production endpoint and signing key.
 
-The codebase is well-engineered, fully offline, tested, documented, and builds
-a clean release artifact. No critical defects. All remaining findings are
-tracked in the debt register (§12) for post-release sprints.
+The codebase is well-engineered, offline-first, tested, documented, and builds
+a clean R8 release artifact. No critical defects were found locally. All
+remaining findings are tracked in the debt register (§12) or
+`docs/release/KnownLimitations.md`.

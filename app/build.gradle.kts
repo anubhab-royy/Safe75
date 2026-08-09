@@ -28,6 +28,13 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
+val configuredApiBaseUrl = providers.gradleProperty("SAFE75_API_BASE_URL").orNull
+    ?: System.getenv("SAFE75_API_BASE_URL")
+    ?: "https://safe75-backend.example.com/"
+val escapedApiBaseUrl = configuredApiBaseUrl
+    .replace("\\", "\\\\")
+    .replace("\"", "\\\"")
+
 android {
     namespace = "com.attendance.tracker"
     compileSdk = 36
@@ -45,6 +52,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+
+        buildConfigField("String", "API_BASE_URL", "\"$escapedApiBaseUrl\"")
     }
 
     signingConfigs {
@@ -140,6 +149,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockito.core)
+    testImplementation(libs.mockk)
+    testImplementation(libs.mockwebserver)
     testImplementation("org.openpnp:opencv:4.9.0-0")
 
     // Instrumented tests: jUnit rules and runners
@@ -180,6 +191,15 @@ dependencies {
 
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
+
+    // Networking: Retrofit + OkHttp
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+
+    // Security: Jetpack Security (EncryptedSharedPreferences backed by Android Keystore)
+    implementation(libs.androidx.security.crypto)
 
     // Splash Screen
     implementation(libs.androidx.core.splashscreen)

@@ -60,7 +60,21 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun migrate3To4_addsBugReportQueue() {
+        helper.createDatabase(TEST_DB_V4, 3).close()
+
+        val migrated = helper.runMigrationsAndValidate(TEST_DB_V4, 4, true, *Migrations.ALL)
+
+        migrated.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'bug_report_queue'")
+            .use { cursor ->
+                assertEquals(true, cursor.moveToFirst())
+                assertEquals("bug_report_queue", cursor.getString(0))
+            }
+    }
+
     companion object {
         private const val TEST_DB = "migration-test.db"
+        private const val TEST_DB_V4 = "migration-test-v4.db"
     }
 }

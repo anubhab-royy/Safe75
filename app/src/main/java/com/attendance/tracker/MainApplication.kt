@@ -8,6 +8,8 @@ import com.attendance.tracker.core.diagnostics.DiagnosticsManager
 import com.attendance.tracker.core.diagnostics.SafeLogEngine
 import com.attendance.tracker.core.logger.Logger
 import com.attendance.tracker.core.notification.TrackerNotificationManager
+import com.attendance.tracker.feature.bugreport.data.BugReportConnectivityMonitor
+import com.attendance.tracker.feature.bugreport.data.BugReportWorkScheduler
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -27,6 +29,12 @@ class MainApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var diagnosticsManager: DiagnosticsManager
 
+    @Inject
+    lateinit var bugReportConnectivityMonitor: BugReportConnectivityMonitor
+
+    @Inject
+    lateinit var bugReportWorkScheduler: BugReportWorkScheduler
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -37,6 +45,8 @@ class MainApplication : Application(), Configuration.Provider {
         // Diagnostics first so release crashes (including during startup) are captured.
         Logger.setEngine(safeLogger)
         diagnosticsManager.install()
+        bugReportConnectivityMonitor.start()
+        bugReportWorkScheduler.enqueuePendingUploads()
 
         if (BuildConfig.DEBUG) {
             enableStrictMode()

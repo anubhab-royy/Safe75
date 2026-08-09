@@ -73,10 +73,50 @@ object Migrations {
         }
     }
 
+    private val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `bug_report_queue` (
+                    `reportId` TEXT NOT NULL,
+                    `fingerprint` TEXT NOT NULL,
+                    `timestamp` INTEGER NOT NULL,
+                    `appVersion` TEXT NOT NULL,
+                    `versionCode` INTEGER NOT NULL,
+                    `buildType` TEXT NOT NULL,
+                    `androidVersion` TEXT NOT NULL,
+                    `sdkVersion` INTEGER NOT NULL,
+                    `deviceManufacturer` TEXT NOT NULL,
+                    `deviceModel` TEXT NOT NULL,
+                    `cpuAbi` TEXT NOT NULL,
+                    `locale` TEXT NOT NULL,
+                    `crashReportId` TEXT,
+                    `userDescription` TEXT NOT NULL,
+                    `diagnosticsMetadata` TEXT NOT NULL,
+                    `screenshotPath` TEXT,
+                    `screenshotContentType` TEXT,
+                    `remoteReportId` TEXT,
+                    `status` TEXT NOT NULL,
+                    `retryCount` INTEGER NOT NULL,
+                    `createdAt` INTEGER NOT NULL,
+                    `updatedAt` INTEGER NOT NULL,
+                    `lastError` TEXT,
+                    PRIMARY KEY(`reportId`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_bug_report_queue_fingerprint` " +
+                    "ON `bug_report_queue` (`fingerprint`)"
+            )
+        }
+    }
+
     /**
      * Ordered migration list. Register in [androidx.room.RoomDatabase.Builder.addMigrations].
      */
     val ALL: Array<Migration> = arrayOf(
-        MIGRATION_2_3
+        MIGRATION_2_3,
+        MIGRATION_3_4
     )
 }

@@ -6,6 +6,7 @@ import com.attendance.tracker.data.local.database.AppDatabase
 import com.attendance.tracker.data.local.database.Migrations
 import com.attendance.tracker.data.local.database.dao.ArchiveDao
 import com.attendance.tracker.data.local.database.dao.AttendanceDao
+import com.attendance.tracker.data.local.database.dao.BugReportQueueDao
 import com.attendance.tracker.data.local.database.dao.ScheduleDao
 import com.attendance.tracker.data.local.database.dao.SemesterDao
 import com.attendance.tracker.data.local.database.dao.SubjectDao
@@ -77,5 +78,10 @@ object DatabaseModule {
     fun provideArchiveDao(database: AppDatabase): ArchiveDao {
         return database.archiveDao()
     }
-}
 
+    @Provides
+    @Singleton
+    fun provideBugReportQueueDao(database: AppDatabase): BugReportQueueDao {
+        return database.bugReportQueueDao()
+    }
+}

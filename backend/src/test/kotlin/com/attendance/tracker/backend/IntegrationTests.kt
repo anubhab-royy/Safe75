@@ -185,8 +185,7 @@ class IntegrationTests {
 
         val uploadNonce = "nonce_upload_screenshot"
         val uploadTimestamp = System.currentTimeMillis()
-        val rawMultipartString = String(rawMultipartBytes, Charsets.UTF_8)
-        val uploadSig = calculateHmac("$rawMultipartString$uploadNonce$uploadTimestamp", deviceSecret)
+        val uploadSig = calculateHmac("$uploadNonce$uploadTimestamp", deviceSecret)
 
         val screenshotResponse = client.post("/api/v1/reports/$reportId/screenshot") {
             contentType(ContentType.parse("multipart/form-data; boundary=$boundary"))

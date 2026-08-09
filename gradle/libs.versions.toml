@@ -26,6 +26,11 @@ opencv = "4.9.0"
 profileInstaller = "1.4.1"
 benchmarkMacro = "1.4.0"
 uiautomator = "2.3.0"
+retrofit = "2.11.0"
+okhttp = "4.12.0"
+okhttp-logging = "4.12.0"
+mockwebserver = "4.12.0"
+androidxSecurity = "1.1.0-alpha06"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -70,6 +75,13 @@ androidx-glance-material3 = { group = "androidx.glance", name = "glance-material
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileInstaller" }
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmarkMacro" }
 androidx-test-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "androidxSecurity" }
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+retrofit-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp-logging" }
+mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "mockwebserver" }
+mockk = { group = "io.mockk", name = "mockk", version = "1.13.13" }
 
 opencv = { group = "org.opencv", name = "opencv", version.ref = "opencv" }
 

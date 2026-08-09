@@ -34,6 +34,7 @@
 # --- WorkManager ----------------------------------------------------------
 # Worker subclasses must retain their no-arg / assisted constructors.
 -keep class com.attendance.tracker.core.worker.** { *; }
+-keep class * extends androidx.work.InputMerger { *; }
 -keepclassmembers class * extends androidx.work.Worker {
     <init>(android.content.Context, androidx.work.WorkerParameters);
 }

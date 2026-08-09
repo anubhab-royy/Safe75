@@ -53,7 +53,8 @@ fun HomeScreen(
     onNavigateToArchive: () -> Unit,
     onNavigateToArchiveDetails: (Long) -> Unit,
     onNavigateToSemesterReset: () -> Unit,
-    onNavigateToIntegrity: () -> Unit
+    onNavigateToIntegrity: () -> Unit,
+    onNavigateToBugReport: () -> Unit
 ) {
     val navController = rememberNavController()
 
@@ -144,7 +145,8 @@ fun HomeScreen(
                             onNavigateToRestore = onNavigateToRestore,
                             onNavigateToArchive = onNavigateToArchive,
                             onNavigateToSemesterReset = onNavigateToSemesterReset,
-                            onNavigateToIntegrity = onNavigateToIntegrity
+                            onNavigateToIntegrity = onNavigateToIntegrity,
+                            onNavigateToBugReport = onNavigateToBugReport
                         )
                     }
 

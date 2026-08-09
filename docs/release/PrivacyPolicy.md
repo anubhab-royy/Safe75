@@ -7,13 +7,14 @@ students. This policy explains what data the App collects and how it is handled.
 
 ## 1. Data collected
 
-**The App does not collect, transmit, or store any personal data on servers.
-It holds no account system, performs no analytics, and ships with no internet
-permission.**
+Safe75 has no account system and performs no analytics. Attendance data remains
+local, but the App has network access for device enrollment and for explicit,
+user-initiated bug-report uploads.
 
-All data you enter — subjects, schedules, attendance records, reminders, and
-settings — is stored **locally on your device** only, in an on-device SQLite
-database and Preferences DataStore.
+Subjects, schedules, attendance records, reminders, and settings are stored
+locally in SQLite and Preferences DataStore. A submitted bug report contains
+only the issue description, technical diagnostics, required app/device metadata,
+and an optional screenshot.
 
 ## 2. How data is used
 
@@ -24,21 +25,30 @@ Your data is used solely to provide the App's features on your own device:
   cloud drive of your choice via the system file picker — the App itself does
   not upload it).
 - Importing a backup file you provide.
+- Uploading a submitted bug report to Safe75's backend. Metadata is stored in
+  MongoDB Atlas and optional screenshots are stored in Cloudflare R2.
 
 ## 3. Permissions
 
-The App requests **no internet permission**. Optional features use:
+Permissions and access used by the App include:
+
+- **Internet / network state** — used for device enrollment and queued bug-report
+  uploads only.
 
 - **Notifications** — used only to show locally-scheduled class reminders on
   your device.
-- **Photos / storage** — used only when you explicitly choose an image for
-  timetable OCR scanning; the image is processed on-device and not uploaded.
+- **Photos / storage** — used only when you explicitly choose an image for OCR
+  or a bug report. OCR images stay on-device; a selected bug-report screenshot
+  is uploaded only as part of that report.
 
 ## 4. Third parties
 
 The App uses Google's on-device ML Kit text recognition for OCR. ML Kit
 processes images locally; no image data is sent to Google for this feature.
-The App otherwise has no third-party data-sharing integrations.
+Bug-report infrastructure uses MongoDB Atlas and Cloudflare R2 through the
+Safe75 backend. The App does not upload attendance databases, timetables,
+notes, backups, or unrelated files. Automatic Android app-data backup is
+disabled.
 
 ## 5. Data deletion
 

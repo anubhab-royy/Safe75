@@ -98,7 +98,8 @@ sequenceDiagram
 ### 4.1 Database Layer (Room)
 - Managed by `AppDatabase.kt` (inheriting from `RoomDatabase`).
 - Uses KSP code generation to compile DAO query builders.
-- Configured with `fallbackToDestructiveMigration()` for easy database development upgrades.
+- Release migrations are explicit and preserve data; destructive fallback is debug-only.
+- Schema version 4 adds the durable `bug_report_queue` table.
 
 ### 4.2 Preference Storage (Preferences DataStore)
 - Configured in [SettingsPreferences.kt](file:///e:/Code&Programs/GitHub/Safe75/app/src/main/java/com/attendance/tracker/data/local/preferences/SettingsPreferences.kt).
@@ -106,10 +107,18 @@ sequenceDiagram
 - Stores simple configurations: `theme_mode`, `notifications_enabled`, and `last_backup_timestamp`.
 
 ### 4.3 Background Task System (WorkManager)
-- Used for non-blocking periodic database backups and synchronization.
-- Tasks are scheduled via `PeriodicWorkRequestBuilder` with constraints (e.g. device charging, idle state).
+- Existing reminder and widget workers remain scheduled independently.
+- `BugReportUploadWorker` processes the Room queue with a connected-network constraint,
+  unique work, exponential backoff, and persisted retry state.
 
-### 4.4 OCR Timetable Pipeline
+### 4.4 Bug Reporting Reliability
+- `BugReportViewModel` generates diagnostics and writes a complete submission to the queue before scheduling work.
+- Screenshot bytes are stored in app-private storage until the upload succeeds.
+- Metadata is submitted first; the returned backend report ID is persisted before screenshot upload.
+- Connectivity callbacks and WorkManager constraints resume pending work without polling.
+- The backend currently generates report IDs and exposes no client idempotency key, so local duplicate prevention cannot eliminate the narrow crash window immediately after a successful remote metadata response.
+
+### 4.5 OCR Timetable Pipeline
 ```mermaid
 graph LR
     Image[Timetable Screenshot] -->|ML Kit OCR| Text[Raw Text Blocks]

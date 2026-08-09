@@ -61,6 +61,7 @@ fun SettingsScreen(
     onNavigateToArchive: () -> Unit,
     onNavigateToSemesterReset: () -> Unit,
     onNavigateToIntegrity: () -> Unit,
+    onNavigateToBugReport: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val activeTheme by viewModel.themeState.collectAsStateWithLifecycle()
@@ -235,6 +236,12 @@ fun SettingsScreen(
                 title = "Data Integrity",
                 subtitle = "Scan the database for broken references and orphan records.",
                 onClick = onNavigateToIntegrity
+            )
+            SettingsLinkCard(
+                icon = Icons.Default.Info,
+                title = "Report a Problem",
+                subtitle = "Send a description and optional screenshot to Safe75 support.",
+                onClick = onNavigateToBugReport
             )
 
             // Theme Options Panel

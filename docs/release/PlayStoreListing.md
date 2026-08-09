@@ -10,7 +10,7 @@ Draft copy for the Google Play Store listing.
 
 ## Tagline / Short description
 
-Track, simulate, and plan your class attendance to stay safely above your institution's threshold — 100% offline.
+Track, simulate, and plan your class attendance to stay safely above your institution's threshold — offline-first and privacy-focused.
 
 ## Full description (long)
 
@@ -35,8 +35,10 @@ above the minimum required percentage with a clean, offline-first experience.
   next class right on your home screen, with quick actions.
 - **Full data control** — export a JSON backup, restore selectively, archive a
   finished semester, reset for a new one, and run a data-integrity scan.
-- **100% offline-first** — the app requests no internet permission. Your data
-  stays on your device. No accounts, no tracking, no cloud.
+- **Privacy-focused reporting** — attendance data stays on your device. If you
+  explicitly submit a bug report, only the description, technical diagnostics,
+  app/device metadata, and optional screenshot are uploaded. No accounts and no
+  analytics.
 
 ## Category
 
