@@ -194,6 +194,16 @@ private fun ArchiveCard(
                     fontWeight = FontWeight.Bold,
                     color = attendanceColor(archive.overallPercentage)
                 )
+                if (archive.totalClasses > 0) {
+                    Text(
+                        stringResource(
+                            R.string.with_medical_percentage,
+                            String.format(Locale.ROOT, "%.1f%%", archive.withMedicalPercentage)
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.ui.graphics.Color(0xFF2E7D32)
+                    )
+                }
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Default.Delete,

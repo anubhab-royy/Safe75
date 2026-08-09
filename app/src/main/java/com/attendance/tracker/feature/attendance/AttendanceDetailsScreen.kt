@@ -199,6 +199,11 @@ fun AttendanceDetailsScreen(
                         isSelected = status == AttendanceStatus.CANCELLED,
                         onClick = { status = AttendanceStatus.CANCELLED }
                     )
+                    AttendanceStatusRow(
+                        label = stringResource(R.string.medical_leave),
+                        isSelected = status == AttendanceStatus.MEDICAL_LEAVE,
+                        onClick = { status = AttendanceStatus.MEDICAL_LEAVE }
+                    )
                 }
 
                 // Remarks TextField

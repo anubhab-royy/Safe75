@@ -104,7 +104,7 @@ class BackupValidator @Inject constructor() {
         }
 
         // 5. Status value check
-        val validStatuses = setOf("PRESENT", "ABSENT", "CANCELLED")
+        val validStatuses = setOf("PRESENT", "ABSENT", "CANCELLED", "MEDICAL_LEAVE")
         val invalidStatusRecords = data.attendanceRecords.filter { it.status !in validStatuses }
         if (invalidStatusRecords.isNotEmpty()) {
             errors.add(

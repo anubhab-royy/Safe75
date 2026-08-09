@@ -667,6 +667,22 @@ private fun PastClassRow(
                 ) {
                     Text("C", fontWeight = FontWeight.Bold)
                 }
+
+                // Medical Leave Button
+                val isMl = item.status == AttendanceStatus.MEDICAL_LEAVE
+                Button(
+                    onClick = { onMarkAttendance(item, AttendanceStatus.MEDICAL_LEAVE) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isMl) Color(0xFF1565C0) else MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (isMl) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text(
+                        stringResource(R.string.medical_leave_short),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

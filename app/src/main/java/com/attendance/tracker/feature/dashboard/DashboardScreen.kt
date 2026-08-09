@@ -1,5 +1,6 @@
 package com.attendance.tracker.feature.dashboard
 
+import com.attendance.tracker.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -232,7 +234,7 @@ fun DashboardScreen(
                 )
             }
 
-            val atRiskSubjects = subjectStatsList.filter { it.totalClasses > 0 && it.percentage < goal }
+            val atRiskSubjects = subjectStatsList.filter { it.totalClasses > 0 && it.percentage < it.personalGoalPercentage }
             if (atRiskSubjects.isEmpty()) {
                 item {
                     Card(
@@ -258,7 +260,7 @@ fun DashboardScreen(
                 }
             } else {
                 items(atRiskSubjects.take(3), key = { it.subjectId }) { subjectStats ->
-                    NeedsAttentionCard(stats = subjectStats, goal = goal)
+                    NeedsAttentionCard(stats = subjectStats)
                 }
             }
         }
@@ -351,11 +353,13 @@ private fun TodayClassCard(
                             AttendanceStatus.PRESENT -> "✓ Present"
                             AttendanceStatus.ABSENT -> "✗ Absent"
                             AttendanceStatus.CANCELLED -> "Cancelled"
+                            AttendanceStatus.MEDICAL_LEAVE -> stringResource(R.string.medical_leave)
                         }
                         val statusColor = when (status) {
                             AttendanceStatus.PRESENT -> Color(0xFF2E7D32)
                             AttendanceStatus.ABSENT -> Color(0xFFC62828)
                             AttendanceStatus.CANCELLED -> Color(0xFF757575)
+                            AttendanceStatus.MEDICAL_LEAVE -> Color(0xFF1565C0)
                         }
                         Text(
                             text = statusText,
@@ -459,13 +463,20 @@ private fun TodayClassCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "✓ Attendance Recorded: ${status.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                            text = "✓ Attendance Recorded: ${
+                                if (status == AttendanceStatus.MEDICAL_LEAVE) {
+                                    stringResource(R.string.medical_leave)
+                                } else {
+                                    status.name.lowercase().replaceFirstChar { it.uppercase() }
+                                }
+                            }",
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = when (status) {
                                     AttendanceStatus.PRESENT -> Color(0xFF2E7D32)
                                     AttendanceStatus.ABSENT -> Color(0xFFC62828)
                                     AttendanceStatus.CANCELLED -> Color(0xFF757575)
+                                    AttendanceStatus.MEDICAL_LEAVE -> Color(0xFF1565C0)
                                 }
                             )
                         )
@@ -483,35 +494,53 @@ private fun TodayClassCard(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Action Buttons
-                Row(
+                // Action Buttons (2x2 Grid Layout)
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    AttendanceButton(
-                        label = "Present",
-                        isSelected = status == AttendanceStatus.PRESENT,
-                        isAnySelected = status != null,
-                        onClick = { onStatusClick(AttendanceStatus.PRESENT) },
-                        selectedColor = Color(0xFF2E7D32),
-                        modifier = Modifier.weight(1f)
-                    )
-                    AttendanceButton(
-                        label = "Absent",
-                        isSelected = status == AttendanceStatus.ABSENT,
-                        isAnySelected = status != null,
-                        onClick = { onStatusClick(AttendanceStatus.ABSENT) },
-                        selectedColor = Color(0xFFC62828),
-                        modifier = Modifier.weight(1f)
-                    )
-                    AttendanceButton(
-                        label = "Cancelled",
-                        isSelected = status == AttendanceStatus.CANCELLED,
-                        isAnySelected = status != null,
-                        onClick = { onStatusClick(AttendanceStatus.CANCELLED) },
-                        selectedColor = Color(0xFF757575),
-                        modifier = Modifier.weight(1f)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AttendanceButton(
+                            label = "Present",
+                            isSelected = status == AttendanceStatus.PRESENT,
+                            isAnySelected = status != null,
+                            onClick = { onStatusClick(AttendanceStatus.PRESENT) },
+                            selectedColor = Color(0xFF2E7D32),
+                            modifier = Modifier.weight(1f)
+                        )
+                        AttendanceButton(
+                            label = "Absent",
+                            isSelected = status == AttendanceStatus.ABSENT,
+                            isAnySelected = status != null,
+                            onClick = { onStatusClick(AttendanceStatus.ABSENT) },
+                            selectedColor = Color(0xFFC62828),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AttendanceButton(
+                            label = "Cancelled",
+                            isSelected = status == AttendanceStatus.CANCELLED,
+                            isAnySelected = status != null,
+                            onClick = { onStatusClick(AttendanceStatus.CANCELLED) },
+                            selectedColor = Color(0xFF757575),
+                            modifier = Modifier.weight(1f)
+                        )
+                        AttendanceButton(
+                            label = stringResource(R.string.medical_leave),
+                            isSelected = status == AttendanceStatus.MEDICAL_LEAVE,
+                            isAnySelected = status != null,
+                            onClick = { onStatusClick(AttendanceStatus.MEDICAL_LEAVE) },
+                            selectedColor = Color(0xFF1565C0),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
@@ -649,6 +678,14 @@ private fun OverallStatisticsCard(stats: DashboardStatistics, goal: Double) {
                                 fontSize = 48.sp
                             ),
                             color = statusColor
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.with_medical_percentage,
+                                String.format(Locale.getDefault(), "%.1f%%", stats.withMedicalPercentage)
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF2E7D32)
                         )
                     }
                     Text(
@@ -822,7 +859,7 @@ private fun QuickActionButton(
 }
 
 @Composable
-private fun NeedsAttentionCard(stats: SubjectStatistics, goal: Double) {
+private fun NeedsAttentionCard(stats: SubjectStatistics) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -846,11 +883,21 @@ private fun NeedsAttentionCard(stats: SubjectStatistics, goal: Double) {
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    text = String.format(Locale.getDefault(), "%.1f%%", stats.percentage),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.error
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = String.format(Locale.getDefault(), "%.1f%%", stats.percentage),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.with_medical_percentage,
+                            String.format(Locale.getDefault(), "%.1f%%", stats.withMedicalPercentage)
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF2E7D32)
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(
@@ -859,7 +906,7 @@ private fun NeedsAttentionCard(stats: SubjectStatistics, goal: Double) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Goal: ${goal.toInt()}%",
+                    text = "Goal: ${stats.personalGoalPercentage}%",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )

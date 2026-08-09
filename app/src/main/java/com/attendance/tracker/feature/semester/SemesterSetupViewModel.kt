@@ -13,6 +13,9 @@ import com.attendance.tracker.domain.model.SemesterVersion
 import com.attendance.tracker.domain.model.Schedule
 import com.attendance.tracker.domain.model.Subject
 import com.attendance.tracker.core.model.AttendanceTarget
+import com.attendance.tracker.domain.usecase.attendance.DeleteAttendanceUseCase
+import com.attendance.tracker.domain.usecase.attendance.MarkAttendanceUseCase
+import com.attendance.tracker.domain.usecase.attendance.UpdateAttendanceUseCase
 import com.attendance.tracker.domain.repository.AttendanceRepository
 import com.attendance.tracker.domain.repository.ScheduleRepository
 import com.attendance.tracker.domain.repository.SemesterRepository
@@ -56,7 +59,10 @@ class SemesterSetupViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val scheduleRepository: ScheduleRepository,
     private val attendanceRepository: AttendanceRepository,
-    private val subjectRepository: SubjectRepository
+    private val subjectRepository: SubjectRepository,
+    private val markAttendanceUseCase: MarkAttendanceUseCase,
+    private val updateAttendanceUseCase: UpdateAttendanceUseCase,
+    private val deleteAttendanceUseCase: DeleteAttendanceUseCase
 ) : ViewModel() {
 
     private val _currentStep = MutableStateFlow(SetupStep.DETAILS)
@@ -219,9 +225,9 @@ class SemesterSetupViewModel @Inject constructor(
             val record = _attendance.value.find { it.scheduleId == item.scheduleId && it.date == item.date }
             if (record != null) {
                 if (record.status == status) {
-                    attendanceRepository.deleteAttendance(record)
+                    deleteAttendanceUseCase(record)
                 } else {
-                    attendanceRepository.updateAttendance(record.copy(status = status, updatedAt = System.currentTimeMillis()))
+                    updateAttendanceUseCase(record.copy(status = status))
                 }
             } else {
                 val newRecord = Attendance(
@@ -230,7 +236,7 @@ class SemesterSetupViewModel @Inject constructor(
                     date = item.date,
                     status = status
                 )
-                attendanceRepository.insertAttendance(newRecord)
+                markAttendanceUseCase(newRecord)
             }
         }
     }

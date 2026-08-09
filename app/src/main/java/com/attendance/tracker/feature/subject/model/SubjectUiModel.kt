@@ -25,6 +25,7 @@ data class SubjectWithStats(
     val presentCount: Int = 0,
     val totalClasses: Int = 0,
     val percentage: Double = 0.0,
+    val withMedicalPercentage: Double = -1.0,
     val safeMissCount: Int = 0,
     val classesNeeded: Int = 0,
     val safetyStatus: String = "GOOD", // "GOOD", "WARNING", "CRITICAL"

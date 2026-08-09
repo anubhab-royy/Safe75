@@ -246,6 +246,7 @@ class DashboardViewModel @Inject constructor(
         }
         DashboardStatistics(
             overallPercentage = stats.attendancePercentage,
+            withMedicalPercentage = stats.withMedicalPercentage,
             presentCount = stats.presentCount,
             absentCount = stats.absentCount,
             cancelledCount = stats.cancelledCount,
@@ -268,16 +269,16 @@ class DashboardViewModel @Inject constructor(
         _subjectsMap,
         attendanceGoal
     ) { history, subjects, goal ->
-        val gInt = goal.toInt()
         subjects.values.map { subject ->
             val subjectHistory = history.filter { it.subjectId == subject.id }
             val stats = calculateStatisticsUseCase(
                 subjectHistory,
-                gInt,
-                gInt
+                subject.requiredAttendancePercentage,
+                subject.personalAttendanceGoal
             )
             val status = when {
-                stats.attendancePercentage < goal -> "CRITICAL"
+                stats.totalClasses == 0 -> "NEUTRAL"
+                stats.attendancePercentage < subject.personalAttendanceGoal -> "CRITICAL"
                 stats.remainingSafeClasses == 0 -> "WARNING"
                 else -> "GOOD"
             }
@@ -288,8 +289,9 @@ class DashboardViewModel @Inject constructor(
                 presentCount = stats.presentCount,
                 totalClasses = stats.totalClasses,
                 percentage = stats.attendancePercentage,
-                requiredPercentage = goal.toInt(),
-                personalGoalPercentage = goal.toInt(),
+                withMedicalPercentage = stats.withMedicalPercentage,
+                requiredPercentage = subject.requiredAttendancePercentage,
+                personalGoalPercentage = subject.personalAttendanceGoal,
                 safetyStatus = status,
                 safeMissCount = stats.remainingSafeClasses,
                 classesNeeded = stats.classesNeededToReachGoal

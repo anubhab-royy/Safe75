@@ -8,8 +8,9 @@ import kotlin.math.ceil
 
 /**
  * Domain Use Case to calculate attendance statistics.
- * Excludes CANCELLED classes from total counts and implements attendance percentages,
- * safe miss tolerances, and consecutive classes needed to raise attendance to a goal.
+ * Excludes CANCELLED classes from non-cancelled totals while including MEDICAL_LEAVE in display total.
+ * Predictive metrics (remaining safe classes and classes needed to reach goal) predict future attendance
+ * mathematically consistent with displayed normal attendance (present / nonCancelledTotal).
  */
 class CalculateAttendanceStatisticsUseCase @Inject constructor() {
 
@@ -21,17 +22,25 @@ class CalculateAttendanceStatisticsUseCase @Inject constructor() {
         val present = records.count { it.status == AttendanceStatus.PRESENT }
         val absent = records.count { it.status == AttendanceStatus.ABSENT }
         val cancelled = records.count { it.status == AttendanceStatus.CANCELLED }
-        val total = present + absent
+        val medicalLeave = records.count { it.status == AttendanceStatus.MEDICAL_LEAVE }
 
-        val percentage = if (total > 0) {
-            (present.toDouble() / total.toDouble()) * 100.0
+        val displayTotal = present + absent + medicalLeave
+
+        val percentage = if (displayTotal > 0) {
+            (present.toDouble() / displayTotal.toDouble()) * 100.0
+        } else {
+            -1.0
+        }
+
+        val withMedicalPercentage = if (displayTotal > 0) {
+            ((present + medicalLeave).toDouble() / displayTotal.toDouble()) * 100.0
         } else {
             -1.0
         }
 
         val r = requiredPercentage.toDouble()
-        val remainingSafe = if (total > 0 && percentage >= r) {
-            val limit = (100.0 * present - r * total) / r
+        val remainingSafe = if (displayTotal > 0 && percentage >= r) {
+            val limit = (100.0 * present - r * displayTotal) / r
             limit.toInt()
         } else {
             0
@@ -39,13 +48,13 @@ class CalculateAttendanceStatisticsUseCase @Inject constructor() {
 
         val g = goalPercentage.toDouble()
         val needed = if (g >= 100.0) {
-            if (absent > 0) {
-                -1 // Goal is mathematically unreachable
+            if (absent > 0 || medicalLeave > 0) {
+                -1 // Goal of 100% is mathematically unreachable if any non-present classes exist
             } else {
                 0
             }
-        } else if (percentage < g) {
-            val num = g * total - 100.0 * present
+        } else if (displayTotal > 0 && percentage < g) {
+            val num = g * displayTotal - 100.0 * present
             val den = 100.0 - g
             ceil(num / den).toInt().coerceAtLeast(0)
         } else {
@@ -56,8 +65,10 @@ class CalculateAttendanceStatisticsUseCase @Inject constructor() {
             presentCount = present,
             absentCount = absent,
             cancelledCount = cancelled,
-            totalClasses = total,
+            medicalLeaveCount = medicalLeave,
+            totalClasses = displayTotal,
             attendancePercentage = percentage,
+            withMedicalPercentage = withMedicalPercentage,
             remainingSafeClasses = remainingSafe,
             classesNeededToReachGoal = needed
         )

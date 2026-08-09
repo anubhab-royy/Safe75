@@ -41,6 +41,8 @@
     <string name="go_back">Go Back</string>
     <string name="later">Later</string>
     <string name="manage_timetable_versions">Manage Timetable Versions</string>
+    <string name="medical_leave">Medical Leave</string>
+    <string name="medical_leave_short">ML</string>
     <string name="new_btn">+ New</string>
     <string name="no_structures_detected">No structures detected.</string>
     <string name="ok">OK</string>
@@ -82,6 +84,7 @@
     <string name="type_reset_to_confirm">Type RESET to confirm</string>
     <string name="understood">Understood</string>
     <string name="version_name">Version Name</string>
+    <string name="with_medical_percentage">With Medical: %1$s</string>
     <string name="widget_description">Today\'s attendance, overall percentage, next class, and quick actions.</string>
     <string name="widget_label">Safe75</string>
     <string name="you_have_unsaved_changes_are">You have unsaved changes. Are you sure you want to discard them?</string>

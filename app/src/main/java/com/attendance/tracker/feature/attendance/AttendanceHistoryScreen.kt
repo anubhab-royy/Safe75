@@ -229,7 +229,13 @@ private fun HistoryRecordCard(
     val statusColor = when (record.status) {
         "PRESENT" -> Color(0xFF2E7D32)
         "ABSENT" -> Color(0xFFC62828)
+        "MEDICAL_LEAVE" -> Color(0xFF1565C0)
         else -> Color(0xFF757575)
+    }
+    val statusLabel = if (record.status == "MEDICAL_LEAVE") {
+        stringResource(R.string.medical_leave)
+    } else {
+        record.status
     }
 
     Card(
@@ -267,7 +273,7 @@ private fun HistoryRecordCard(
                 }
 
                 Text(
-                    text = record.status,
+                    text = statusLabel,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = statusColor
                 )

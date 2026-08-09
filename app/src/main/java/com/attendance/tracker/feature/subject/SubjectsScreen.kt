@@ -440,11 +440,21 @@ private fun SubjectCardItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom
                 ) {
-                    Text(
-                        text = String.format(Locale.getDefault(), "%.1f%%", subject.percentage),
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                        color = statusColor
-                    )
+                    Column {
+                        Text(
+                            text = String.format(Locale.getDefault(), "%.1f%%", subject.percentage),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                            color = statusColor
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.with_medical_percentage,
+                                String.format(Locale.getDefault(), "%.1f%%", subject.withMedicalPercentage)
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF2E7D32)
+                        )
+                    }
                     Text(
                         text = "Goal: ${subject.attendanceGoal}%",
                         style = MaterialTheme.typography.bodyMedium,

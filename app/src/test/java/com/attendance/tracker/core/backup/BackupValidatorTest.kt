@@ -38,6 +38,20 @@ class BackupValidatorTest {
     }
 
     @Test
+    fun testAllKnownAttendanceStatuses_passValidation() {
+        listOf("PRESENT", "ABSENT", "CANCELLED", "MEDICAL_LEAVE").forEach { status ->
+            val result = validator.validate(
+                validBackup().copy(
+                    attendanceRecords = listOf(
+                        BackupAttendanceDto(100L, 1L, 10L, "2026-08-02", status, createdAt = now, updatedAt = now)
+                    )
+                )
+            )
+            assertTrue("$status should be valid", result is ValidationResult.Valid)
+        }
+    }
+
+    @Test
     fun testUnsupportedSchema_rejectedEarly() {
         val data = validBackup().copy(
             metadata = BackupMetadata(backupVersion = 1, appVersion = "1.0", schemaVersion = 99, createdAt = now)

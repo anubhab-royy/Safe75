@@ -49,6 +49,26 @@ class BackupManagerTest {
     }
 
     @Test
+    fun testParseBackup_medicalLeaveStatus_isValidatedAndRestored() {
+        val data = BackupData(
+            metadata = BackupMetadata(backupVersion = 1, appVersion = "1.0", schemaVersion = 1, createdAt = now),
+            subjects = listOf(BackupSubjectDto(1L, "Math", createdAt = now, updatedAt = now)),
+            schedules = listOf(
+                BackupScheduleDto(10L, 1L, "Monday", "09:00", "10:00", versionId = 5L, createdAt = now, updatedAt = now)
+            ),
+            semesterVersions = listOf(BackupSemesterDto(5L, "Fall 2026", createdAt = now)),
+            attendanceRecords = listOf(
+                BackupAttendanceDto(100L, 1L, 10L, "2026-08-02", "MEDICAL_LEAVE", createdAt = now, updatedAt = now)
+            )
+        )
+
+        val result = manager.parseBackup(serializer.serialize(data))
+
+        assertTrue(result is BackupParseResult.Parsed)
+        assertEquals("MEDICAL_LEAVE", (result as BackupParseResult.Parsed).data.attendanceRecords.first().status)
+    }
+
+    @Test
     fun testParseBackup_blank_returnsInvalidJson() {
         val result = manager.parseBackup("   ")
         assertTrue(result is BackupParseResult.Rejected)

@@ -24,7 +24,16 @@ class UpdateAttendanceUseCase @Inject constructor(
 
         val validation = validator.validate(attendance, isDuplicate)
         if (validation is ValidationResult.Valid) {
-            repository.updateAttendance(attendance)
+            val preservedAttendance = existing?.let {
+                attendance.copy(
+                    createdAt = it.createdAt,
+                    updatedAt = System.currentTimeMillis()
+                )
+            } ?: attendance
+            val updatedRows = repository.updateAttendance(preservedAttendance)
+            if (updatedRows == 0) {
+                return ValidationResult.Invalid("Attendance record was not found")
+            }
         }
         return validation
     }

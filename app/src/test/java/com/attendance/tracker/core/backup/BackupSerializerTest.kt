@@ -95,6 +95,25 @@ class BackupSerializerTest {
     }
 
     @Test
+    fun testMedicalLeave_serializesAndDeserializesAsEnumName() {
+        val data = sampleData().copy(
+            attendanceRecords = listOf(
+                sampleData().attendanceRecords.first().copy(status = "MEDICAL_LEAVE")
+            )
+        )
+
+        val serialized = serializer.serialize(data)
+        val parsed = deserializer.deserialize(serialized).getOrThrow()
+
+        assertTrue(serialized.contains("\"status\": \"MEDICAL_LEAVE\""))
+        assertEquals("MEDICAL_LEAVE", parsed.attendanceRecords.first().status)
+        assertEquals(
+            com.attendance.tracker.core.model.AttendanceStatus.MEDICAL_LEAVE,
+            com.attendance.tracker.core.model.AttendanceStatus.valueOf(parsed.attendanceRecords.first().status)
+        )
+    }
+
+    @Test
     fun testDeserialize_blankString_returnsFailure() {
         val result = deserializer.deserialize("   ")
         assertTrue(result.isFailure)

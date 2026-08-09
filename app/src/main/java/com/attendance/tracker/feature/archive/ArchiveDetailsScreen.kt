@@ -174,6 +174,16 @@ private fun ArchiveDetailsContent(
                         fontWeight = FontWeight.Bold,
                         color = attendanceColor(archive.overallPercentage)
                     )
+                    if (archive.totalClasses > 0) {
+                        Text(
+                            stringResource(
+                                R.string.with_medical_percentage,
+                                String.format(Locale.ROOT, "%.1f%%", archive.withMedicalPercentage)
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF2E7D32)
+                        )
+                    }
                 }
             }
         }
@@ -236,6 +246,7 @@ private fun SummaryStatRow(archive: ArchiveData) {
         SummaryChip(archive.presentCount, "Present")
         SummaryChip(archive.absentCount, "Absent")
         SummaryChip(archive.cancelledCount, "Cancelled")
+        SummaryChip(archive.medicalLeaveCount, stringResource(R.string.medical_leave))
     }
 }
 
@@ -266,12 +277,24 @@ private fun SubjectStatCard(stat: ArchiveSubjectStat) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Text(
-                String.format(Locale.ROOT, "%.1f%%", stat.attendancePercentage),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = attendanceColor(stat.attendancePercentage)
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    String.format(Locale.ROOT, "%.1f%%", stat.attendancePercentage),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = attendanceColor(stat.attendancePercentage)
+                )
+                if (stat.totalClasses > 0) {
+                    Text(
+                        stringResource(
+                            R.string.with_medical_percentage,
+                            String.format(Locale.ROOT, "%.1f%%", stat.withMedicalPercentage)
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF2E7D32)
+                    )
+                }
+            }
         }
     }
 }

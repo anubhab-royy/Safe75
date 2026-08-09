@@ -13,7 +13,9 @@ data class ArchiveSubjectStat(
     val presentCount: Int,
     val absentCount: Int,
     val cancelledCount: Int,
-    val attendancePercentage: Double
+    val attendancePercentage: Double,
+    val medicalLeaveCount: Int = 0,
+    val withMedicalPercentage: Double = 0.0
 )
 
 /**
@@ -33,6 +35,8 @@ data class ArchiveData(
     val absentCount: Int,
     val cancelledCount: Int,
     val overallPercentage: Double,
+    val medicalLeaveCount: Int = 0,
+    val withMedicalPercentage: Double = 0.0,
     /** Per-subject breakdown; populated on-demand when opening archive details. */
     val subjectStats: List<ArchiveSubjectStat> = emptyList(),
     /** Count of schedule slots captured in the snapshot. */

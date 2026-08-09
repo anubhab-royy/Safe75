@@ -13,6 +13,7 @@ import com.attendance.tracker.data.local.database.entity.SubjectEntity
 import com.attendance.tracker.data.local.database.entity.ScheduleEntity
 import com.attendance.tracker.data.local.database.entity.AttendanceEntity
 import com.attendance.tracker.data.local.database.entity.BugReportQueueEntity
+import com.attendance.tracker.data.local.database.entity.SemesterVersionEntity
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -31,6 +32,7 @@ class AppDatabaseTest {
     private lateinit var subjectDao: SubjectDao
     private lateinit var scheduleDao: ScheduleDao
     private lateinit var attendanceDao: AttendanceDao
+    private lateinit var semesterDao: com.attendance.tracker.data.local.database.dao.SemesterDao
 
     @Before
     fun createDb() {
@@ -39,6 +41,7 @@ class AppDatabaseTest {
         subjectDao = db.subjectDao()
         scheduleDao = db.scheduleDao()
         attendanceDao = db.attendanceDao()
+        semesterDao = db.semesterDao()
     }
 
     @After
@@ -131,5 +134,65 @@ class AppDatabaseTest {
         assertNotNull(loaded)
         assertEquals("The dashboard is blank", loaded?.userDescription)
         assertEquals("QUEUED", loaded?.status)
+    }
+
+    @Test
+    fun medicalLeaveRoundTripsAndUpdatesExistingAttendanceRow() = runBlocking {
+        subjectDao.upsertSubject(
+            SubjectEntity(
+                id = 1L,
+                name = "Mathematics",
+                requiredAttendancePercentage = 75,
+                personalAttendanceGoal = 85,
+                createdAt = 1L,
+                updatedAt = 1L
+            )
+        )
+        semesterDao.insertVersion(
+            SemesterVersionEntity(
+                id = 1L,
+                name = "Semester 1",
+                isActive = true,
+                createdAt = 1L,
+                startDate = LocalDate.of(2026, 1, 1),
+                endDate = LocalDate.of(2026, 6, 1)
+            )
+        )
+        scheduleDao.upsertSchedule(
+            ScheduleEntity(
+                id = 10L,
+                subjectId = 1L,
+                dayOfWeek = WeekDay.Monday,
+                startTime = LocalTime.of(9, 0),
+                endTime = LocalTime.of(10, 0),
+                versionId = 1L,
+                createdAt = 1L,
+                updatedAt = 1L
+            )
+        )
+
+        val date = LocalDate.of(2026, 2, 2)
+        val id = attendanceDao.insert(
+            AttendanceEntity(
+                subjectId = 1L,
+                scheduleId = 10L,
+                date = date,
+                status = AttendanceStatus.MEDICAL_LEAVE,
+                createdAt = 123L,
+                updatedAt = 123L
+            )
+        )
+
+        val loaded = attendanceDao.getAttendanceById(id)
+        assertNotNull(loaded)
+        assertEquals(AttendanceStatus.MEDICAL_LEAVE, loaded?.status)
+
+        val rowsUpdated = attendanceDao.update(
+            loaded!!.copy(status = AttendanceStatus.PRESENT, updatedAt = 456L)
+        )
+        assertEquals(1, rowsUpdated)
+        assertEquals(1, attendanceDao.getAllAttendance().size)
+        assertEquals(AttendanceStatus.PRESENT, attendanceDao.getAttendanceById(id)?.status)
+        assertEquals(123L, attendanceDao.getAttendanceById(id)?.createdAt)
     }
 }

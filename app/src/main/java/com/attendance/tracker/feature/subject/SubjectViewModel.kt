@@ -161,6 +161,7 @@ class SubjectViewModel @Inject constructor(
                         presentCount = stats.presentCount,
                         totalClasses = stats.totalClasses,
                         percentage = stats.attendancePercentage,
+                        withMedicalPercentage = stats.withMedicalPercentage,
                         safeMissCount = stats.remainingSafeClasses,
                         classesNeeded = stats.classesNeededToReachGoal,
                         safetyStatus = status,
