@@ -131,8 +131,8 @@ class OCRReviewViewModelTest {
             endTime = OcrField("10:00", 0.98f)
         )
         viewModel.updateTimetableRow(updatedRow)
-        // Row was not already in the list so list remains empty
-        assertEquals(0, viewModel.timetableRows.value.size)
+        assertEquals(1, viewModel.timetableRows.value.size)
+        assertEquals("Updated Maths", viewModel.timetableRows.value.first().subjectName.value)
     }
 
     @Test
@@ -175,5 +175,208 @@ class OCRReviewViewModelTest {
         // Empty rows, save attendance has nothing to do — returns true
         val result = viewModel.saveAttendance(emptyMap())
         assertEquals(true, result)
+    }
+
+    @Test
+    fun testSaveAttendance_validSingleScheduleResolution_savesSuccessfullyWithRealScheduleId() = runTest {
+        advanceUntilIdle()
+        semesterRepo.insertVersion(SemesterVersion(id = 1L, name = "Fall 2026", startDate = LocalDate.now().minusMonths(3), endDate = LocalDate.now().plusMonths(3), isActive = true))
+        val subId = subjectRepo.insertSubject(Subject(id = 1L, name = "Mathematics", requiredAttendancePercentage = 75, personalAttendanceGoal = 85))
+
+        // Add schedule for every weekday so date walk succeeds
+        for (day in WeekDay.entries) {
+            scheduleRepo.insertSchedule(Schedule(id = day.ordinal + 10L, subjectId = subId, dayOfWeek = day, startTime = java.time.LocalTime.of(9, 0), endTime = java.time.LocalTime.of(10, 0), versionId = 1L))
+        }
+
+        viewModel.updateAttendanceRow(
+            OcrAttendanceRow(
+                id = "row-1",
+                subjectName = OcrField("Mathematics", 0.95f),
+                presentCount = OcrField(2, 0.95f),
+                totalClasses = OcrField(2, 0.95f),
+                percentage = OcrField(100.0, 0.95f),
+                matchedSubjectId = subId
+            )
+        )
+
+        val success = viewModel.saveAttendance(emptyMap())
+        advanceUntilIdle()
+
+        assertTrue(success)
+        assertEquals(null, viewModel.error.value)
+        val savedList = attendanceRepo.getAttendanceForSubject(subId)
+        assertEquals(2, savedList.size)
+        assertTrue(savedList.all { it.scheduleId != 0L })
+    }
+
+    @Test
+    fun testSaveAttendance_missingScheduleMapping_returnsFalseWithUserError() = runTest {
+        advanceUntilIdle()
+        semesterRepo.insertVersion(SemesterVersion(id = 1L, name = "Fall 2026", startDate = LocalDate.now().minusMonths(3), endDate = LocalDate.now().plusMonths(3), isActive = true))
+        val subId = subjectRepo.insertSubject(Subject(id = 1L, name = "Physics", requiredAttendancePercentage = 75, personalAttendanceGoal = 85))
+        // No schedule added for Physics
+
+        viewModel.updateAttendanceRow(
+            OcrAttendanceRow(
+                id = "row-1",
+                subjectName = OcrField("Physics", 0.95f),
+                presentCount = OcrField(1, 0.95f),
+                totalClasses = OcrField(1, 0.95f),
+                percentage = OcrField(100.0, 0.95f),
+                matchedSubjectId = subId
+            )
+        )
+
+        val success = viewModel.saveAttendance(emptyMap())
+        advanceUntilIdle()
+
+        assertEquals(false, success)
+        assertTrue(viewModel.error.value?.contains("No timetable schedule found") == true)
+    }
+
+    @Test
+    fun testSaveAttendance_multipleSchedulesAmbiguous_returnsFalseWithUserError() = runTest {
+        advanceUntilIdle()
+        semesterRepo.insertVersion(SemesterVersion(id = 1L, name = "Fall 2026", startDate = LocalDate.now().minusMonths(3), endDate = LocalDate.now().plusMonths(3), isActive = true))
+        val subId = subjectRepo.insertSubject(Subject(id = 1L, name = "Chemistry", requiredAttendancePercentage = 75, personalAttendanceGoal = 85))
+
+        // Insert two schedules for Chemistry on Monday
+        scheduleRepo.insertSchedule(Schedule(id = 101L, subjectId = subId, dayOfWeek = WeekDay.Monday, startTime = java.time.LocalTime.of(9, 0), endTime = java.time.LocalTime.of(10, 0), versionId = 1L))
+        scheduleRepo.insertSchedule(Schedule(id = 102L, subjectId = subId, dayOfWeek = WeekDay.Monday, startTime = java.time.LocalTime.of(14, 0), endTime = java.time.LocalTime.of(15, 0), versionId = 1L))
+
+        viewModel.updateAttendanceRow(
+            OcrAttendanceRow(
+                id = "row-1",
+                subjectName = OcrField("Chemistry", 0.95f),
+                presentCount = OcrField(1, 0.95f),
+                totalClasses = OcrField(1, 0.95f),
+                percentage = OcrField(100.0, 0.95f),
+                matchedSubjectId = subId
+            )
+        )
+
+        val success = viewModel.saveAttendance(emptyMap())
+        advanceUntilIdle()
+
+        assertEquals(false, success)
+        assertTrue(viewModel.error.value?.contains("Multiple timetable schedules found") == true)
+    }
+
+    @Test
+    fun testSaveAttendance_existingOcrRecord_updatesStatus() = runTest {
+        advanceUntilIdle()
+        semesterRepo.insertVersion(SemesterVersion(id = 1L, name = "Fall 2026", startDate = LocalDate.now().minusMonths(3), endDate = LocalDate.now().plusMonths(3), isActive = true))
+        val subId = subjectRepo.insertSubject(Subject(id = 1L, name = "Biology", requiredAttendancePercentage = 75, personalAttendanceGoal = 85))
+
+        for (day in WeekDay.entries) {
+            scheduleRepo.insertSchedule(Schedule(id = day.ordinal + 10L, subjectId = subId, dayOfWeek = day, startTime = java.time.LocalTime.of(9, 0), endTime = java.time.LocalTime.of(10, 0), versionId = 1L))
+        }
+
+        // Save initial OCR attendance (1 total class, 0 present -> ABSENT)
+        viewModel.updateAttendanceRow(
+            OcrAttendanceRow(
+                id = "row-1",
+                subjectName = OcrField("Biology", 0.95f),
+                presentCount = OcrField(0, 0.95f),
+                totalClasses = OcrField(1, 0.95f),
+                percentage = OcrField(0.0, 0.95f),
+                matchedSubjectId = subId
+            )
+        )
+        viewModel.saveAttendance(emptyMap())
+        advanceUntilIdle()
+
+        val initialList = attendanceRepo.getAttendanceForSubject(subId)
+        assertEquals(1, initialList.size)
+        assertEquals(AttendanceStatus.ABSENT, initialList.first().status)
+
+        // Save updated OCR attendance (1 total class, 1 present -> PRESENT)
+        viewModel.updateAttendanceRow(
+            OcrAttendanceRow(
+                id = "row-1",
+                subjectName = OcrField("Biology", 0.95f),
+                presentCount = OcrField(1, 0.95f),
+                totalClasses = OcrField(1, 0.95f),
+                percentage = OcrField(100.0, 0.95f),
+                matchedSubjectId = subId
+            )
+        )
+        val success = viewModel.saveAttendance(emptyMap())
+        advanceUntilIdle()
+
+        assertTrue(success)
+        val updatedList = attendanceRepo.getAttendanceForSubject(subId)
+        assertEquals(1, updatedList.size)
+        assertEquals(AttendanceStatus.PRESENT, updatedList.first().status)
+    }
+
+    @Test
+    fun testSaveAttendance_existingManualRecord_preservesManualEntry() = runTest {
+        advanceUntilIdle()
+        semesterRepo.insertVersion(SemesterVersion(id = 1L, name = "Fall 2026", startDate = LocalDate.now().minusMonths(3), endDate = LocalDate.now().plusMonths(3), isActive = true))
+        val subId = subjectRepo.insertSubject(Subject(id = 1L, name = "History", requiredAttendancePercentage = 75, personalAttendanceGoal = 85))
+
+        val schedId = scheduleRepo.insertSchedule(Schedule(id = 50L, subjectId = subId, dayOfWeek = WeekDay.Monday, startTime = java.time.LocalTime.of(9, 0), endTime = java.time.LocalTime.of(10, 0), versionId = 1L))
+        for (day in WeekDay.entries) {
+            if (day != WeekDay.Monday) {
+                scheduleRepo.insertSchedule(Schedule(id = day.ordinal + 10L, subjectId = subId, dayOfWeek = day, startTime = java.time.LocalTime.of(9, 0), endTime = java.time.LocalTime.of(10, 0), versionId = 1L))
+            }
+        }
+
+        // Insert a manual attendance record for today (or recent Monday)
+        val mondayDate = LocalDate.now()
+        attendanceRepo.insertAttendance(
+            Attendance(id = 99L, subjectId = subId, scheduleId = schedId, date = mondayDate, status = AttendanceStatus.PRESENT, remarks = "Manual entry")
+        )
+
+        // Perform OCR import
+        viewModel.updateAttendanceRow(
+            OcrAttendanceRow(
+                id = "row-1",
+                subjectName = OcrField("History", 0.95f),
+                presentCount = OcrField(0, 0.95f),
+                totalClasses = OcrField(1, 0.95f),
+                percentage = OcrField(0.0, 0.95f),
+                matchedSubjectId = subId
+            )
+        )
+        viewModel.saveAttendance(emptyMap())
+        advanceUntilIdle()
+
+        // Manual record must be preserved
+        val record = attendanceRepo.getAttendanceById(99L)
+        assertTrue(record != null)
+        assertEquals("Manual entry", record?.remarks)
+        assertEquals(AttendanceStatus.PRESENT, record?.status)
+    }
+
+    @Test
+    fun testSaveAttendance_repeatedImport_doesNotCrash() = runTest {
+        advanceUntilIdle()
+        semesterRepo.insertVersion(SemesterVersion(id = 1L, name = "Fall 2026", startDate = LocalDate.now().minusMonths(3), endDate = LocalDate.now().plusMonths(3), isActive = true))
+        val subId = subjectRepo.insertSubject(Subject(id = 1L, name = "CS101", requiredAttendancePercentage = 75, personalAttendanceGoal = 85))
+
+        for (day in WeekDay.entries) {
+            scheduleRepo.insertSchedule(Schedule(id = day.ordinal + 10L, subjectId = subId, dayOfWeek = day, startTime = java.time.LocalTime.of(9, 0), endTime = java.time.LocalTime.of(10, 0), versionId = 1L))
+        }
+
+        val row = OcrAttendanceRow(
+            id = "row-1",
+            subjectName = OcrField("CS101", 0.95f),
+            presentCount = OcrField(2, 0.95f),
+            totalClasses = OcrField(2, 0.95f),
+            percentage = OcrField(100.0, 0.95f),
+            matchedSubjectId = subId
+        )
+
+        viewModel.updateAttendanceRow(row)
+        val success1 = viewModel.saveAttendance(emptyMap())
+        advanceUntilIdle()
+        assertTrue(success1)
+
+        viewModel.updateAttendanceRow(row)
+        val success2 = viewModel.saveAttendance(emptyMap())
+        advanceUntilIdle()
+        assertTrue(success2)
     }
 }

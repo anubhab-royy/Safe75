@@ -7,20 +7,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import kotlinx.coroutines.delay
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
- * Splash Screen showing its title and transitioning to Welcome after a short delay.
+ * Splash Screen showing app branding while evaluating active semester state.
  */
 @Composable
 fun SplashScreen(
-    onNavigateNext: () -> Unit
+    onNavigateToMain: () -> Unit,
+    onNavigateToWelcome: () -> Unit,
+    viewModel: SplashViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(key1 = Unit) {
-        delay(1500)
-        onNavigateNext()
+    val destination by viewModel.destination.collectAsStateWithLifecycle()
+
+    LaunchedEffect(destination) {
+        when (destination) {
+            SplashDestination.MainGraph -> onNavigateToMain()
+            SplashDestination.Welcome -> onNavigateToWelcome()
+            SplashDestination.Loading -> { /* Remain on splash screen while loading */ }
+        }
     }
 
     Box(
@@ -30,7 +39,7 @@ fun SplashScreen(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Splash Screen",
+            text = "Safe75",
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.primary
         )

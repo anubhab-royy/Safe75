@@ -248,4 +248,66 @@ class ComposeUiScreensTest {
         }
         composeTestRule.onNodeWithText("Backup & Restore").assertIsDisplayed()
     }
+
+    @Test
+    fun testDashboardScreen_rendersWithoutKeyCollisionWhenScheduleIdAndSubjectIdMatch() {
+        val viewModel = mock(DashboardViewModel::class.java)
+        `when`(viewModel.activeVersion).thenReturn(MutableStateFlow(null))
+        `when`(viewModel.dashboardStats).thenReturn(
+            MutableStateFlow(
+                DashboardStatistics(
+                    overallPercentage = 50.0,
+                    withMedicalPercentage = 50.0,
+                    presentCount = 5,
+                    absentCount = 5,
+                    cancelledCount = 0,
+                    totalClasses = 10,
+                    safetyStatus = "CRITICAL",
+                    safeMissCount = 0,
+                    classesNeeded = 5
+                )
+            )
+        )
+        `when`(viewModel.attendanceGoal).thenReturn(MutableStateFlow(75.0))
+
+        val todayClass = com.attendance.tracker.feature.attendance.TodayScheduleItem(
+            scheduleId = 2L,
+            subjectId = 2L,
+            subjectName = "Physics",
+            subjectColor = 0xFF123456.toInt(),
+            startTime = "09:00",
+            endTime = "10:00",
+            room = "Room 101",
+            faculty = "Dr. Smith",
+            attendance = null
+        )
+        `when`(viewModel.todayClasses).thenReturn(MutableStateFlow(listOf(todayClass)))
+
+        val atRiskSubject = com.attendance.tracker.domain.model.SubjectStatistics(
+            subjectId = 2L,
+            subjectName = "Physics",
+            subjectColor = 0xFF123456.toInt(),
+            presentCount = 5,
+            totalClasses = 10,
+            percentage = 50.0,
+            withMedicalPercentage = 50.0,
+            requiredPercentage = 75,
+            personalGoalPercentage = 85,
+            safetyStatus = "CRITICAL",
+            safeMissCount = 0,
+            classesNeeded = 5
+        )
+        `when`(viewModel.subjectStatsList).thenReturn(MutableStateFlow(listOf(atRiskSubject)))
+
+        composeTestRule.setContent {
+            DashboardScreen(
+                onNavigateToAttendanceHistory = {},
+                onNavigateToSimulator = {},
+                onNavigateToLeavePlanner = {},
+                viewModel = viewModel
+            )
+        }
+
+        composeTestRule.onAllNodesWithText("Physics").assertCountEquals(2)
+    }
 }

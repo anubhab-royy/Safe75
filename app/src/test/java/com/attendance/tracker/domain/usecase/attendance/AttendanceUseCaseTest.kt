@@ -74,6 +74,26 @@ class FakeAttendanceRepository : AttendanceRepository {
     override fun searchAttendance(query: String): Flow<List<Attendance>> = flow {
         emit(list.filter { it.remarks?.contains(query) == true })
     }
+
+    override suspend fun saveOcrAttendanceBatch(records: List<Attendance>): Int {
+        var count = 0
+        for (record in records) {
+            val existing = list.find { it.subjectId == record.subjectId && it.scheduleId == record.scheduleId && it.date == record.date }
+            if (existing == null) {
+                val id = if (record.id == 0L) (list.size + 1).toLong() else record.id
+                list.add(record.copy(id = id))
+                count++
+            } else if (existing.remarks?.contains("Imported via OCR") == true) {
+                val idx = list.indexOfFirst { it.id == existing.id }
+                if (idx != -1) {
+                    list[idx] = existing.copy(status = record.status, updatedAt = System.currentTimeMillis())
+                    count++
+                }
+            }
+            // Existing manual record is preserved (not updated)
+        }
+        return count
+    }
 }
 
 class AttendanceUseCaseTest {

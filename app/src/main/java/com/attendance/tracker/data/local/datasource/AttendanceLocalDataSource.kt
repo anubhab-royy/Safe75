@@ -1,5 +1,7 @@
 package com.attendance.tracker.data.local.datasource
 
+import androidx.room.withTransaction
+import com.attendance.tracker.data.local.database.AppDatabase
 import android.content.Context
 import com.attendance.tracker.core.widget.WidgetRefreshScheduler
 import com.attendance.tracker.data.local.database.dao.AttendanceDao
@@ -45,6 +47,8 @@ interface AttendanceLocalDataSource {
     fun countCancelled(): Flow<Int>
 
     fun searchAttendance(query: String): Flow<List<AttendanceEntity>>
+
+    suspend fun saveOcrAttendanceBatch(records: List<AttendanceEntity>): Int
 }
 
 /**
@@ -55,7 +59,8 @@ interface AttendanceLocalDataSource {
  */
 class AttendanceLocalDataSourceImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val attendanceDao: AttendanceDao
+    private val attendanceDao: AttendanceDao,
+    private val database: AppDatabase
 ) : AttendanceLocalDataSource {
 
     override fun observeAttendanceForSubject(subjectId: Long): Flow<List<AttendanceEntity>> {
@@ -126,6 +131,32 @@ class AttendanceLocalDataSourceImpl @Inject constructor(
 
     override fun searchAttendance(query: String): Flow<List<AttendanceEntity>> {
         return attendanceDao.searchAttendance(query)
+    }
+
+    override suspend fun saveOcrAttendanceBatch(records: List<AttendanceEntity>): Int {
+        if (records.isEmpty()) return 0
+        var modifiedCount = 0
+        database.withTransaction {
+            for (entity in records) {
+                val existing = attendanceDao.getAttendanceRecord(entity.subjectId, entity.scheduleId, entity.date)
+                if (existing == null) {
+                    val id = attendanceDao.insert(entity)
+                    if (id > 0) modifiedCount++
+                } else if (existing.remarks?.contains("Imported via OCR") == true) {
+                    val updatedEntity = existing.copy(
+                        status = entity.status,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    val count = attendanceDao.update(updatedEntity)
+                    if (count > 0) modifiedCount++
+                }
+                // Existing manual record is preserved (not updated)
+            }
+        }
+        if (modifiedCount > 0) {
+            refreshWidget()
+        }
+        return modifiedCount
     }
 
     private fun refreshWidget() {

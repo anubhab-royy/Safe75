@@ -207,6 +207,7 @@ class ArchiveRepositoryImplTest {
         override fun observeTodayAttendance(date: LocalDate): Flow<List<AttendanceEntity>> = flowOf(records.filter { it.date == date })
         override fun searchAttendance(query: String): Flow<List<AttendanceEntity>> = flowOf(records)
         override suspend fun checkDuplicateAttendance(subjectId: Long, scheduleId: Long, date: LocalDate): Boolean = records.any { it.subjectId == subjectId && it.scheduleId == scheduleId && it.date == date }
+        override suspend fun getAttendanceRecord(subjectId: Long, scheduleId: Long, date: LocalDate): AttendanceEntity? = records.find { it.subjectId == subjectId && it.scheduleId == scheduleId && it.date == date }
         override fun countPresent(): Flow<Int> = flowOf(records.count { it.status == AttendanceStatus.PRESENT })
         override fun countAbsent(): Flow<Int> = flowOf(records.count { it.status == AttendanceStatus.ABSENT })
         override fun countCancelled(): Flow<Int> = flowOf(records.count { it.status == AttendanceStatus.CANCELLED })

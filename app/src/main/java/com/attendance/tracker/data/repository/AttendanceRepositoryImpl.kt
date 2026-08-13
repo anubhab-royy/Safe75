@@ -91,4 +91,9 @@ class AttendanceRepositoryImpl @Inject constructor(
             list.map { AttendanceMapper.entityToDomain(it) }
         }
     }
+
+    override suspend fun saveOcrAttendanceBatch(records: List<Attendance>): Int {
+        val entities = records.map { AttendanceMapper.domainToEntity(it) }
+        return localDataSource.saveOcrAttendanceBatch(entities)
+    }
 }

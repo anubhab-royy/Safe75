@@ -166,7 +166,7 @@ fun DashboardScreen(
                     }
                 }
             } else {
-                items(todayClasses, key = { it.scheduleId }) { item ->
+                items(todayClasses, key = { "today-schedule-${it.scheduleId}" }) { item ->
                     val isExpanded = expandedCards.contains(item.scheduleId)
                     TodayClassCard(
                         item = item,
@@ -259,7 +259,7 @@ fun DashboardScreen(
                     }
                 }
             } else {
-                items(atRiskSubjects.take(3), key = { it.subjectId }) { subjectStats ->
+                items(atRiskSubjects.take(3), key = { "at-risk-subject-${it.subjectId}" }) { subjectStats ->
                     NeedsAttentionCard(stats = subjectStats)
                 }
             }

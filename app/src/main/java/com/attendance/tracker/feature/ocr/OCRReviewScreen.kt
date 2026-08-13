@@ -147,6 +147,22 @@ fun OCRReviewScreen(
                     .background(MaterialTheme.colorScheme.background)
                     .padding(paddingValues)
             ) {
+                val currentError = error
+                if (currentError != null) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Dimensions.SpacingMedium)
+                    ) {
+                        Text(
+                            text = currentError,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.padding(Dimensions.SpacingMedium)
+                        )
+                    }
+                }
+
                 val isEmpty = if (isTimetable) timetableRows.isEmpty() else attendanceRows.isEmpty()
 
                 if (isEmpty) {

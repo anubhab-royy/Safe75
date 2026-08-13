@@ -101,8 +101,10 @@ class OcrReviewViewModel @Inject constructor(
         val idx = current.indexOfFirst { it.id == updated.id }
         if (idx != -1) {
             current[idx] = updated
-            _timetableRows.value = current
+        } else {
+            current.add(updated)
         }
+        _timetableRows.value = current
     }
 
     fun deleteTimetableRow(id: String) {
@@ -116,8 +118,10 @@ class OcrReviewViewModel @Inject constructor(
         val idx = current.indexOfFirst { it.id == updated.id }
         if (idx != -1) {
             current[idx] = updated
-            _attendanceRows.value = current
+        } else {
+            current.add(updated)
         }
+        _attendanceRows.value = current
     }
 
     fun deleteAttendanceRow(id: String) {
@@ -185,27 +189,82 @@ class OcrReviewViewModel @Inject constructor(
      * Persists parsed attendance logs.
      */
     suspend fun saveAttendance(mappings: Map<String, Long>): Boolean {
-        _attendanceRows.value.forEach { row ->
-            val subjectId = row.matchedSubjectId ?: mappings[row.id] ?: return@forEach
+        _error.value = null
+        val rows = _attendanceRows.value
+        if (rows.isEmpty()) return true
 
-            val total = row.totalClasses.value
-            val present = row.presentCount.value
+        return runCatching {
+            val activeVersion = semesterRepository.getActiveVersion()
+                ?: throw IllegalStateException("No active semester version found. Please setup semester first.")
+            val activeSchedules = scheduleRepository.getSchedulesForVersion(activeVersion.id)
 
-            for (i in 1..total) {
-                val status = if (i <= present) AttendanceStatus.PRESENT else AttendanceStatus.ABSENT
-                val date = LocalDate.now().minusDays(i.toLong())
+            val recordsToSave = mutableListOf<Attendance>()
 
-                val log = Attendance(
-                    subjectId = subjectId,
-                    scheduleId = 0L,
-                    date = date,
-                    status = status,
-                    remarks = "Imported via OCR"
-                )
-                attendanceRepository.insertAttendance(log)
+            for (row in rows) {
+                val subjectId = row.matchedSubjectId ?: mappings[row.id]
+                    ?: throw IllegalArgumentException("Subject '${row.subjectName.value}' is not mapped to any existing subject.")
+
+                val total = row.totalClasses.value
+                val present = row.presentCount.value
+
+                val subjectSchedules = activeSchedules.filter { it.subjectId == subjectId }
+                if (subjectSchedules.isEmpty()) {
+                    throw IllegalStateException("No timetable schedule found for subject '${row.subjectName.value}'. Please configure timetable first.")
+                }
+
+                var generatedCount = 0
+                var dayOffset = 0L
+                val maxLookbackDays = 365L
+
+                while (generatedCount < total && dayOffset < maxLookbackDays) {
+                    val date = LocalDate.now().minusDays(dayOffset)
+                    dayOffset++
+
+                    val dateDayEnum = when (date.dayOfWeek) {
+                        java.time.DayOfWeek.MONDAY -> WeekDay.Monday
+                        java.time.DayOfWeek.TUESDAY -> WeekDay.Tuesday
+                        java.time.DayOfWeek.WEDNESDAY -> WeekDay.Wednesday
+                        java.time.DayOfWeek.THURSDAY -> WeekDay.Thursday
+                        java.time.DayOfWeek.FRIDAY -> WeekDay.Friday
+                        java.time.DayOfWeek.SATURDAY -> WeekDay.Saturday
+                        java.time.DayOfWeek.SUNDAY -> WeekDay.Sunday
+                    }
+
+                    val matchingSchedules = subjectSchedules.filter { it.dayOfWeek == dateDayEnum }
+
+                    if (matchingSchedules.isEmpty()) {
+                        continue
+                    }
+
+                    if (matchingSchedules.size > 1) {
+                        throw IllegalStateException("Multiple timetable schedules found for '${row.subjectName.value}' on ${dateDayEnum.name}. Cannot resolve schedule automatically.")
+                    }
+
+                    generatedCount++
+                    val status = if (generatedCount <= present) AttendanceStatus.PRESENT else AttendanceStatus.ABSENT
+
+                    recordsToSave.add(
+                        Attendance(
+                            subjectId = subjectId,
+                            scheduleId = matchingSchedules[0].id,
+                            date = date,
+                            status = status,
+                            remarks = "Imported via OCR"
+                        )
+                    )
+                }
+
+                if (generatedCount < total) {
+                    throw IllegalStateException("Could not resolve $total class dates for '${row.subjectName.value}'. Please check timetable schedules.")
+                }
             }
+
+            attendanceRepository.saveOcrAttendanceBatch(recordsToSave)
+            _attendanceRows.value = emptyList()
+            true
+        }.getOrElse { e ->
+            _error.value = e.message ?: "Failed to save attendance records"
+            false
         }
-        _attendanceRows.value = emptyList()
-        return true
     }
 }

@@ -63,7 +63,12 @@ fun AppNavHost(
         ) {
             composable(Screen.Splash.route) {
                 SplashScreen(
-                    onNavigateNext = {
+                    onNavigateToMain = {
+                        navController.navigate(Screen.MainGraph.route) {
+                            popUpTo(Screen.RootGraph.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToWelcome = {
                         navController.navigate(Screen.Welcome.route) {
                             popUpTo(Screen.Splash.route) { inclusive = true }
                         }
