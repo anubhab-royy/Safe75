@@ -34,6 +34,7 @@
 # --- WorkManager ----------------------------------------------------------
 # Worker subclasses must retain their no-arg / assisted constructors.
 -keep class com.attendance.tracker.core.worker.** { *; }
+-keep class * extends androidx.work.InputMerger { *; }
 -keepclassmembers class * extends androidx.work.Worker {
     <init>(android.content.Context, androidx.work.WorkerParameters);
 }
@@ -42,8 +43,34 @@
 }
 
 # --- ML Kit ---------------------------------------------------------------
-# ML Kit bundles its own rules; keep parser/scheduler entry points.
+# REQUIRED: R8 obfuscates ML Kit's internal runtime classes, which makes
+# TextRecognition.process() throw a NullPointerException ("getClass() on a null
+# object reference") in minified release builds (verified via Phase B2 device
+# logs + release mapping: 322+ renamed classes across mlkit_vision_common and
+# mlkit_vision_text_common). Keep ML Kit's public API and its internal runtime
+# packages referenced during text recognition.
+-keep class com.google.mlkit.common.** { *; }
+-keep class com.google.mlkit.vision.common.** { *; }
+-keep class com.google.mlkit.vision.text.** { *; }
+-keep class com.google.android.gms.internal.mlkit_common.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_common.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_text_common.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_text_bundled_common.** { *; }
+
+# App-side OCR entry points (ML Kit callers).
 -keep class com.attendance.tracker.feature.ocr.** { *; }
+
+# --- OpenCV ---------------------------------------------------------------
+# REQUIRED: the OpenCV 4.9.0 AAR ships NO consumer ProGuard rules (verified by
+# inspecting the artifact), yet its Java wrapper declares `native` methods
+# (e.g. org.opencv.core.Mat.n_Mat()) that are resolved at runtime by the JNI
+# name-mangling convention against symbols exported from libopencv_java4.so
+# (e.g. Java_org_opencv_core_Mat_n_1Mat). Obfuscating org.opencv.* renames the
+# class and its native method declarations, breaking symbol resolution and
+# causing UnsatisfiedLinkError on the first OCR operation in minified builds.
+# This rule is scoped to the third-party org.opencv package only (fully owned
+# by the library); no application classes are affected.
+-keep class org.opencv.** { *; }
 
 # --- Glance App Widget ----------------------------------------------------
 # Glance widget classes must be referenced from the manifest by name.

@@ -5,6 +5,7 @@ import org.opencv.android.Utils
 import org.opencv.core.Mat
 import org.opencv.core.Rect
 import com.attendance.tracker.feature.ocr.structure.TableGridCell
+import com.attendance.tracker.feature.ocr.diagnostics.OcrInstrumentation
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,11 +37,12 @@ class CellExtractor @Inject constructor() {
      * @return List of [ExtractedCell] containing cropped bitmaps.
      */
     fun extractCells(originalMat: Mat, cells: List<TableGridCell>): List<ExtractedCell> {
+        val extractStart = System.nanoTime()
         val extracted = ArrayList<ExtractedCell>()
         val colsLimit = originalMat.cols()
         val rowsLimit = originalMat.rows()
 
-        for (cell in cells) {
+        for ((index, cell) in cells.withIndex()) {
             val r = cell.rect
             // Ensure bounding boxes lie strictly within image boundaries
             val x = r.x.coerceIn(0, colsLimit - 1)
@@ -57,6 +59,12 @@ class CellExtractor @Inject constructor() {
             Utils.matToBitmap(cellMat, bitmap)
             cellMat.release()
 
+            OcrInstrumentation.i(
+                OcrInstrumentation.TAG_CELL_EXTRACT,
+                "CELL_EXTRACT #$index row=${cell.startRow} col=${cell.startCol} " +
+                    "rect=(${x},${y},${width},${height}) bitmap=${width}x${height} bytes=${width * height * 4}"
+            )
+
             extracted.add(
                 ExtractedCell(
                     id = cell.id,
@@ -69,6 +77,12 @@ class CellExtractor @Inject constructor() {
                 )
             )
         }
+
+        OcrInstrumentation.i(
+            OcrInstrumentation.TAG_CELL_EXTRACT,
+            "CELL_EXTRACT total=${extracted.size} elapsed=${OcrInstrumentation.elapsedMs(extractStart)}ms"
+        )
+
         return extracted
     }
 }

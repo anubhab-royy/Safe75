@@ -1,5 +1,6 @@
 package com.attendance.tracker.feature.widget
 
+import com.attendance.tracker.core.common.DispatcherProvider
 import com.attendance.tracker.core.logger.Logger
 import com.attendance.tracker.core.model.WeekDay
 import com.attendance.tracker.domain.repository.AttendanceRepository
@@ -7,7 +8,6 @@ import com.attendance.tracker.domain.repository.ScheduleRepository
 import com.attendance.tracker.domain.repository.SemesterRepository
 import com.attendance.tracker.domain.repository.SubjectRepository
 import com.attendance.tracker.domain.usecase.attendance.CalculateAttendanceStatisticsUseCase
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -19,7 +19,7 @@ import javax.inject.Singleton
 /**
  * Loads the [WidgetSummary] used by the home screen widget.
  *
- * Reads are performed on [Dispatchers.IO] so the widget render and the
+ * Reads are performed on a background thread so the widget render and the
  * WorkManager refresh worker never block the main thread.
  */
 @Singleton
@@ -28,13 +28,14 @@ class WidgetDataProvider @Inject constructor(
     private val scheduleRepository: ScheduleRepository,
     private val semesterRepository: SemesterRepository,
     private val subjectRepository: SubjectRepository,
-    private val statisticsUseCase: CalculateAttendanceStatisticsUseCase
+    private val statisticsUseCase: CalculateAttendanceStatisticsUseCase,
+    private val dispatcherProvider: DispatcherProvider
 ) {
 
     /**
      * Computes a fresh snapshot of the widget data.
      */
-    suspend fun load(): WidgetSummary = withContext(Dispatchers.IO) {
+    suspend fun load(): WidgetSummary = withContext(dispatcherProvider.io) {
         try {
             val activeVersion = semesterRepository.getActiveVersion()
             val subjects = subjectRepository.getSubjects().associateBy { it.id }

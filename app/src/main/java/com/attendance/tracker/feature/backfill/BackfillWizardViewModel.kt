@@ -1,5 +1,9 @@
 package com.attendance.tracker.feature.backfill
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.attendance.tracker.core.model.AttendanceStatus
@@ -49,6 +53,7 @@ data class BackfillWizardItem(
  * record, and exposes the remaining missing entries. Marking entries persists
  * attendance immediately so the list reacts to database changes.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class BackfillWizardViewModel @Inject constructor(
     private val scheduleRepository: ScheduleRepository,
@@ -64,15 +69,17 @@ class BackfillWizardViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            semesterRepository.observeActiveVersion().collect { active ->
-                if (active != null) {
-                    scheduleRepository.observeSchedulesForVersion(active.id).collect { list ->
-                        _schedules.value = list
+            semesterRepository.observeActiveVersion()
+                .flatMapLatest { active ->
+                    if (active != null) {
+                        scheduleRepository.observeSchedulesForVersion(active.id)
+                    } else {
+                        flowOf(emptyList())
                     }
-                } else {
-                    _schedules.value = emptyList()
                 }
-            }
+                .collect { list ->
+                    _schedules.value = list
+                }
         }
 
         viewModelScope.launch {

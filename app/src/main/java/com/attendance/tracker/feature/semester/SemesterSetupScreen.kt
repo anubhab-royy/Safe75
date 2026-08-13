@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.semester
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,7 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -69,12 +71,12 @@ fun SemesterSetupScreen(
     onNavigateBack: () -> Unit,
     viewModel: SemesterSetupViewModel = hiltViewModel()
 ) {
-    val step by viewModel.currentStep.collectAsState()
-    val name by viewModel.semesterName.collectAsState()
-    val startDate by viewModel.startDate.collectAsState()
-    val goal by viewModel.attendanceGoal.collectAsState()
-    val schedules by viewModel.schedulesList.collectAsState()
-    val pastClasses by viewModel.pastClassesList.collectAsState()
+    val step by viewModel.currentStep.collectAsStateWithLifecycle()
+    val name by viewModel.semesterName.collectAsStateWithLifecycle()
+    val startDate by viewModel.startDate.collectAsStateWithLifecycle()
+    val goal by viewModel.attendanceGoal.collectAsStateWithLifecycle()
+    val schedules by viewModel.schedulesList.collectAsStateWithLifecycle()
+    val pastClasses by viewModel.pastClassesList.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM dd, yyyy") }
@@ -280,7 +282,7 @@ private fun DetailsStepView(
             OutlinedTextField(
                 value = name,
                 onValueChange = onNameChange,
-                label = { Text("Semester Name") },
+                label = { Text(stringResource(R.string.semester_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -290,7 +292,7 @@ private fun DetailsStepView(
                 value = startDate.format(dateFormatter),
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Semester Start Date") },
+                label = { Text(stringResource(R.string.semester_start_date)) },
                 trailingIcon = {
                     Icon(
                         Icons.Default.CalendarMonth,
@@ -664,6 +666,22 @@ private fun PastClassRow(
                     )
                 ) {
                     Text("C", fontWeight = FontWeight.Bold)
+                }
+
+                // Medical Leave Button
+                val isMl = item.status == AttendanceStatus.MEDICAL_LEAVE
+                Button(
+                    onClick = { onMarkAttendance(item, AttendanceStatus.MEDICAL_LEAVE) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isMl) Color(0xFF1565C0) else MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (isMl) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text(
+                        stringResource(R.string.medical_leave_short),
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

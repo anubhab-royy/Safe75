@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.ocr
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,7 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -75,11 +77,11 @@ fun OCRReviewScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    val timetableRows by viewModel.timetableRows.collectAsState()
-    val attendanceRows by viewModel.attendanceRows.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val subjects by viewModel.subjects.collectAsState()
+    val timetableRows by viewModel.timetableRows.collectAsStateWithLifecycle()
+    val attendanceRows by viewModel.attendanceRows.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val subjects by viewModel.subjects.collectAsStateWithLifecycle()
 
     // Holds subject ID mapping updates for attendance screenshot mapping dialogs
     val subjectMappings = remember { mutableStateMapOf<String, Long>() }
@@ -111,7 +113,7 @@ fun OCRReviewScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     LoadingIndicator()
                     Spacer(modifier = Modifier.height(Dimensions.SpacingSmall))
-                    Text("Processing image text recognition...")
+                    Text(stringResource(R.string.processing_image_text_recognition))
                 }
             }
         } else if (error != null) {
@@ -134,7 +136,7 @@ fun OCRReviewScreen(
                             viewModel.scanAttendance(context, imageUri)
                         }
                     }) {
-                        Text("Retry Scanning")
+                        Text(stringResource(R.string.retry_scanning))
                     }
                 }
             }
@@ -145,6 +147,22 @@ fun OCRReviewScreen(
                     .background(MaterialTheme.colorScheme.background)
                     .padding(paddingValues)
             ) {
+                val currentError = error
+                if (currentError != null) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Dimensions.SpacingMedium)
+                    ) {
+                        Text(
+                            text = currentError,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.padding(Dimensions.SpacingMedium)
+                        )
+                    }
+                }
+
                 val isEmpty = if (isTimetable) timetableRows.isEmpty() else attendanceRows.isEmpty()
 
                 if (isEmpty) {
@@ -158,9 +176,9 @@ fun OCRReviewScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)
                         ) {
-                            Text("No structures detected.")
+                            Text(stringResource(R.string.no_structures_detected))
                             OutlinedButton(onClick = onNavigateBack) {
-                                Text("Go Back")
+                                Text(stringResource(R.string.go_back))
                             }
                         }
                     }
@@ -281,7 +299,7 @@ fun OCRReviewScreen(
                             onClick = onNavigateBack,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.cancel))
                         }
 
                         Button(
@@ -299,7 +317,7 @@ fun OCRReviewScreen(
                             },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Save All")
+                            Text(stringResource(R.string.save_all))
                         }
                     }
                 }
@@ -369,7 +387,7 @@ private fun TimetableReviewCard(
             OutlinedTextField(
                 value = row.subjectName.value,
                 onValueChange = { onEdit(row.copy(subjectName = OcrField(it, row.subjectName.confidence))) },
-                label = { Text("Subject Name") },
+                label = { Text(stringResource(R.string.subject_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -381,7 +399,7 @@ private fun TimetableReviewCard(
                 OutlinedTextField(
                     value = row.dayOfWeek.value,
                     onValueChange = { onEdit(row.copy(dayOfWeek = OcrField(it, row.dayOfWeek.confidence))) },
-                    label = { Text("Day") },
+                    label = { Text(stringResource(R.string.day)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -389,7 +407,7 @@ private fun TimetableReviewCard(
                 OutlinedTextField(
                     value = row.startTime.value,
                     onValueChange = { onEdit(row.copy(startTime = OcrField(it, row.startTime.confidence))) },
-                    label = { Text("Start Time") },
+                    label = { Text(stringResource(R.string.start_time)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -397,7 +415,7 @@ private fun TimetableReviewCard(
                 OutlinedTextField(
                     value = row.endTime.value,
                     onValueChange = { onEdit(row.copy(endTime = OcrField(it, row.endTime.confidence))) },
-                    label = { Text("End Time") },
+                    label = { Text(stringResource(R.string.end_time)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -410,7 +428,7 @@ private fun TimetableReviewCard(
                 OutlinedTextField(
                     value = row.faculty.value ?: "",
                     onValueChange = { onEdit(row.copy(faculty = OcrField(it.takeIf { it.isNotBlank() }, row.faculty.confidence))) },
-                    label = { Text("Teacher (Opt)") },
+                    label = { Text(stringResource(R.string.teacher_opt)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -418,7 +436,7 @@ private fun TimetableReviewCard(
                 OutlinedTextField(
                     value = row.room.value ?: "",
                     onValueChange = { onEdit(row.copy(room = OcrField(it.takeIf { it.isNotBlank() }, row.room.confidence))) },
-                    label = { Text("Room (Opt)") },
+                    label = { Text(stringResource(R.string.room_opt)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -482,7 +500,7 @@ private fun AttendanceReviewCard(
             OutlinedTextField(
                 value = row.subjectName.value,
                 onValueChange = { onEdit(row.copy(subjectName = OcrField(it, row.subjectName.confidence))) },
-                label = { Text("Subject Name") },
+                label = { Text(stringResource(R.string.subject_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -497,7 +515,7 @@ private fun AttendanceReviewCard(
                         val count = input.toIntOrNull() ?: 0
                         onEdit(row.copy(presentCount = OcrField(count, row.presentCount.confidence)))
                     },
-                    label = { Text("Present") },
+                    label = { Text(stringResource(R.string.present)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -508,7 +526,7 @@ private fun AttendanceReviewCard(
                         val count = input.toIntOrNull() ?: 0
                         onEdit(row.copy(totalClasses = OcrField(count, row.totalClasses.confidence)))
                     },
-                    label = { Text("Total") },
+                    label = { Text(stringResource(R.string.total)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -519,7 +537,7 @@ private fun AttendanceReviewCard(
                         val pct = input.toDoubleOrNull() ?: 0.0
                         onEdit(row.copy(percentage = OcrField(pct, row.percentage.confidence)))
                     },
-                    label = { Text("Percentage") },
+                    label = { Text(stringResource(R.string.percentage)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )

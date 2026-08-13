@@ -158,23 +158,25 @@ class DashboardViewModelTest {
 
         // Add subjects and schedules
         val subjId = subjectRepo.insertSubject(Subject(id = 1L, name = "SE"))
-        // Mark 4 present, 0 absent (100%)
+        // Mark 4 present, 0 absent (100%) and one Medical Leave record.
         attendanceRepo.insertAttendance(Attendance(id = 1L, subjectId = subjId, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
         attendanceRepo.insertAttendance(Attendance(id = 2L, subjectId = subjId, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
         attendanceRepo.insertAttendance(Attendance(id = 3L, subjectId = subjId, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
         attendanceRepo.insertAttendance(Attendance(id = 4L, subjectId = subjId, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.PRESENT))
+        attendanceRepo.insertAttendance(Attendance(id = 5L, subjectId = subjId, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.MEDICAL_LEAVE))
         advanceUntilIdle()
 
-        // With 75% goal, safety status should be GOOD
-        assertEquals(100.0, viewModel.dashboardStats.value!!.overallPercentage, 0.1)
-        assertEquals("GOOD", viewModel.dashboardStats.value!!.safetyStatus)
+        // With 75% goal, 4 Present, 1 Medical Leave (80.0% normal), limit is (400 - 375)/75 = 0 safe misses, so status is WARNING
+        assertEquals(80.0, viewModel.dashboardStats.value!!.overallPercentage, 0.1)
+        assertEquals(100.0, viewModel.dashboardStats.value!!.withMedicalPercentage, 0.1)
+        assertEquals("WARNING", viewModel.dashboardStats.value!!.safetyStatus)
 
         // Now change target goal to 90%
         settingsRepo.updateAttendanceTarget(com.attendance.tracker.core.model.AttendanceTarget(90.0, 90.0))
         advanceUntilIdle()
 
-        // With 90% goal and 100% attendance, they can't miss any class, so safety status becomes WARNING
-        assertEquals("WARNING", viewModel.dashboardStats.value!!.safetyStatus)
+        // With 90% goal and 80.0% normal attendance, percentage < goal so safety status becomes CRITICAL
+        assertEquals("CRITICAL", viewModel.dashboardStats.value!!.safetyStatus)
     }
 
     @Test
@@ -228,24 +230,72 @@ class DashboardViewModelTest {
         assertEquals("SE", item.subjectName)
         assertEquals(null, item.attendance)
 
-        // 3. Mark class as PRESENT
-        viewModel.onAttendanceStatusClick(item, AttendanceStatus.PRESENT)
+        // 3. Mark an unmarked class as MEDICAL_LEAVE
+        viewModel.onAttendanceStatusClick(item, AttendanceStatus.MEDICAL_LEAVE)
         advanceUntilIdle()
         val markedItem = viewModel.todayClasses.value.first()
         assertNotNull(markedItem.attendance)
-        assertEquals(AttendanceStatus.PRESENT, markedItem.attendance!!.status)
+        assertEquals(AttendanceStatus.MEDICAL_LEAVE, markedItem.attendance!!.status)
 
-        // 4. Toggle Present to ABSENT
-        viewModel.onAttendanceStatusClick(markedItem, AttendanceStatus.ABSENT)
+        // 4. Transition Medical Leave through the other statuses
+        viewModel.onAttendanceStatusClick(markedItem, AttendanceStatus.PRESENT)
+        advanceUntilIdle()
+        assertEquals(AttendanceStatus.PRESENT, viewModel.todayClasses.value.first().attendance!!.status)
+
+        viewModel.onAttendanceStatusClick(viewModel.todayClasses.value.first(), AttendanceStatus.ABSENT)
+        advanceUntilIdle()
+        assertEquals(AttendanceStatus.ABSENT, viewModel.todayClasses.value.first().attendance!!.status)
+
+        viewModel.onAttendanceStatusClick(viewModel.todayClasses.value.first(), AttendanceStatus.CANCELLED)
+        advanceUntilIdle()
+        assertEquals(AttendanceStatus.CANCELLED, viewModel.todayClasses.value.first().attendance!!.status)
+
+        viewModel.onAttendanceStatusClick(viewModel.todayClasses.value.first(), AttendanceStatus.MEDICAL_LEAVE)
         advanceUntilIdle()
         val changedItem = viewModel.todayClasses.value.first()
         assertNotNull(changedItem.attendance)
-        assertEquals(AttendanceStatus.ABSENT, changedItem.attendance!!.status)
+        assertEquals(AttendanceStatus.MEDICAL_LEAVE, changedItem.attendance!!.status)
 
-        // 5. Click ABSENT again to clear selection (delete attendance)
-        viewModel.onAttendanceStatusClick(changedItem, AttendanceStatus.ABSENT)
+        // 5. Click Medical Leave again to clear selection (delete attendance)
+        viewModel.onAttendanceStatusClick(changedItem, AttendanceStatus.MEDICAL_LEAVE)
         advanceUntilIdle()
         val clearedItem = viewModel.todayClasses.value.first()
         assertEquals(null, clearedItem.attendance)
+    }
+
+    @Test
+    fun testSubjectStatsList_usesSubjectSpecificGoals() = runTest {
+        semesterRepo.insertVersion(
+            SemesterVersion(
+                id = 1L,
+                name = "Test Semester",
+                isActive = true,
+                startDate = LocalDate.now().minusMonths(3),
+                endDate = LocalDate.now().plusMonths(3)
+            )
+        )
+        semesterRepo.switchActiveVersion(1L)
+        advanceUntilIdle()
+
+        // Subject A has personal goal 50%, Subject B has personal goal 75%
+        val subA = subjectRepo.insertSubject(Subject(id = 1L, name = "SubA", personalAttendanceGoal = 50, requiredAttendancePercentage = 50))
+        val subB = subjectRepo.insertSubject(Subject(id = 2L, name = "SubB", personalAttendanceGoal = 75, requiredAttendancePercentage = 75))
+
+        // SubB has P=0, A=1, ML=2 -> displayTotal=3, normal=0%
+        attendanceRepo.insertAttendance(Attendance(id = 10L, subjectId = subB, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.ABSENT))
+        attendanceRepo.insertAttendance(Attendance(id = 11L, subjectId = subB, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.MEDICAL_LEAVE))
+        attendanceRepo.insertAttendance(Attendance(id = 12L, subjectId = subB, scheduleId = 0L, date = LocalDate.now(), status = AttendanceStatus.MEDICAL_LEAVE))
+        advanceUntilIdle()
+
+        val subjectStats = viewModel.subjectStatsList.value
+        val statA = subjectStats.find { it.subjectId == subA }
+        val statB = subjectStats.find { it.subjectId == subB }
+
+        assertNotNull(statA)
+        assertNotNull(statB)
+
+        assertEquals(50, statA!!.personalGoalPercentage)
+        assertEquals(75, statB!!.personalGoalPercentage)
+        assertEquals(9, statB.classesNeeded) // (0 + 9)/(3 + 9) = 75% goal, NOT 1
     }
 }

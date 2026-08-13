@@ -81,7 +81,7 @@ The target users of Safe75 are:
 
 ### 8.2 Security & Privacy Goals
 - **Local Storage Encryption:** Sensitive settings and backup preferences must be encrypted via Tink or Android Keystore under EncryptedSharedPreferences (planned transition).
-- **Network Permissions:** The application operates with zero internet permissions by default, ensuring all personal records remain local on the user's storage.
+- **Network Permissions:** The application uses network access only for device enrollment and explicit bug-report uploads. Attendance records remain local and are excluded from the upload payload.
 
 ### 8.3 Accessibility & Localization
 - **M3 Contrast Compliance:** Contrast ratios between texts and background elements must adhere to WCAG 2.1 AA standards (minimum 4.5:1 ratio).

@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.schedule
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,15 +26,13 @@ fun ConflictDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Schedule Overlap Conflict") },
+        title = { Text(stringResource(R.string.schedule_overlap_conflict)) },
         text = {
-            Text(
-                "The selected timing overlaps with the following scheduled classes:\n\n$conflictInfo\n\nPlease resolve the time overlap before saving."
-            )
+            Text(stringResource(R.string.the_selected_timing_overlaps_with, conflictInfo))
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Understood")
+                Text(stringResource(R.string.understood))
             }
         }
     )

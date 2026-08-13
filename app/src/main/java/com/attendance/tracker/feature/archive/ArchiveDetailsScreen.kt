@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.archive
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +31,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -61,7 +63,7 @@ fun ArchiveDetailsScreen(
     onNavigateBack: () -> Unit,
     viewModel: ArchiveViewModel = hiltViewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(archiveId) {
         viewModel.loadArchiveDetails(archiveId)
@@ -121,16 +123,16 @@ fun ArchiveDetailsScreen(
         }
     }
 
-    if (state.showRestoreOptions && state.selectedArchive != null) {
-        val archive = state.selectedArchive!!
+    val archive = state.selectedArchive
+    if (state.showRestoreOptions && archive != null) {
         RestoreOptionsDialog(
             options = state.restoreOptions,
             onOptionsChanged = viewModel::updateRestoreOptions,
             onConfirm = { viewModel.restoreArchive(archive.id) },
             onDismiss = viewModel::dismissRestoreOptions,
             subjectCount = archive.subjectStats.size,
-            scheduleCount = archive.totalClasses,
-            attendanceCount = archive.totalClasses,
+            scheduleCount = archive.scheduleCount,
+            attendanceCount = archive.attendanceCount,
             showSemesterVersions = false,
             showSettings = false,
             showPreviewSummary = true,
@@ -172,6 +174,16 @@ private fun ArchiveDetailsContent(
                         fontWeight = FontWeight.Bold,
                         color = attendanceColor(archive.overallPercentage)
                     )
+                    if (archive.totalClasses > 0) {
+                        Text(
+                            stringResource(
+                                R.string.with_medical_percentage,
+                                String.format(Locale.ROOT, "%.1f%%", archive.withMedicalPercentage)
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF2E7D32)
+                        )
+                    }
                 }
             }
         }
@@ -203,7 +215,7 @@ private fun ArchiveDetailsContent(
                         .fillMaxWidth()
                         .padding(horizontal = Dimensions.SpacingMedium)
                         .padding(bottom = Dimensions.SpacingMedium)
-                ) { Text("Restore Archived Semester") }
+                ) { Text(stringResource(R.string.restore_archived_semester)) }
             }
         }
 
@@ -234,6 +246,7 @@ private fun SummaryStatRow(archive: ArchiveData) {
         SummaryChip(archive.presentCount, "Present")
         SummaryChip(archive.absentCount, "Absent")
         SummaryChip(archive.cancelledCount, "Cancelled")
+        SummaryChip(archive.medicalLeaveCount, stringResource(R.string.medical_leave))
     }
 }
 
@@ -264,12 +277,24 @@ private fun SubjectStatCard(stat: ArchiveSubjectStat) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Text(
-                String.format(Locale.ROOT, "%.1f%%", stat.attendancePercentage),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = attendanceColor(stat.attendancePercentage)
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    String.format(Locale.ROOT, "%.1f%%", stat.attendancePercentage),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = attendanceColor(stat.attendancePercentage)
+                )
+                if (stat.totalClasses > 0) {
+                    Text(
+                        stringResource(
+                            R.string.with_medical_percentage,
+                            String.format(Locale.ROOT, "%.1f%%", stat.withMedicalPercentage)
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF2E7D32)
+                    )
+                }
+            }
         }
     }
 }

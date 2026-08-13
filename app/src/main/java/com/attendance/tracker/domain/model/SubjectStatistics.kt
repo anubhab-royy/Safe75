@@ -10,6 +10,7 @@ data class SubjectStatistics(
     val presentCount: Int,
     val totalClasses: Int,
     val percentage: Double,
+    val withMedicalPercentage: Double,
     val requiredPercentage: Int,
     val personalGoalPercentage: Int,
     val safetyStatus: String, // "SAFE", "WARNING", "CRITICAL"

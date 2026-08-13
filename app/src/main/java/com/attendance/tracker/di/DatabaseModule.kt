@@ -3,11 +3,14 @@ package com.attendance.tracker.di
 import android.content.Context
 import androidx.room.Room
 import com.attendance.tracker.data.local.database.AppDatabase
+import com.attendance.tracker.data.local.database.Migrations
 import com.attendance.tracker.data.local.database.dao.ArchiveDao
 import com.attendance.tracker.data.local.database.dao.AttendanceDao
+import com.attendance.tracker.data.local.database.dao.BugReportQueueDao
 import com.attendance.tracker.data.local.database.dao.ScheduleDao
 import com.attendance.tracker.data.local.database.dao.SemesterDao
 import com.attendance.tracker.data.local.database.dao.SubjectDao
+import com.attendance.tracker.core.util.Constants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,12 +30,23 @@ object DatabaseModule {
     fun provideAppDatabase(
         @ApplicationContext context: Context
     ): AppDatabase {
-        return Room.databaseBuilder(
+        val builder = Room.databaseBuilder(
             context,
             AppDatabase::class.java,
-            "attendance_tracker_db"
-        ).fallbackToDestructiveMigration(true)
-         .build()
+            Constants.DATABASE_NAME
+        )
+        // Versioned migrations are registered in every build type so existing
+        // user data survives upgrades in both Debug and Release.
+        builder.addMigrations(*Migrations.ALL)
+        if (com.attendance.tracker.BuildConfig.DEBUG) {
+            // Dev-only escape hatch: a pre-release development DB whose schema no
+            // longer matches any registered migration is rebuilt rather than
+            // crashing the debug app. Release intentionally has NO destructive
+            // fallback: a missing migration fails the upgrade (data is preserved)
+            // instead of silently wiping the database.
+            builder.fallbackToDestructiveMigration(true)
+        }
+        return builder.build()
     }
 
     @Provides
@@ -64,5 +78,10 @@ object DatabaseModule {
     fun provideArchiveDao(database: AppDatabase): ArchiveDao {
         return database.archiveDao()
     }
-}
 
+    @Provides
+    @Singleton
+    fun provideBugReportQueueDao(database: AppDatabase): BugReportQueueDao {
+        return database.bugReportQueueDao()
+    }
+}

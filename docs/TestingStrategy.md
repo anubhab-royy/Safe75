@@ -49,7 +49,14 @@ We employ a balanced testing structure to verify correctness at every level of o
 - **Target:** JSON serialization and deserialization.
 - **Approach:** Parse mock valid and corrupted JSON files.
 - **Verification Criteria:**
-  - Corrupted schemas are rejected, and schema version updates trigger notifications.
+   - Corrupted schemas are rejected, and schema version updates trigger notifications.
+
+### 2.6 Bug Report Reliability Testing
+- **Target:** Room queue, attachment storage, WorkManager worker, retry policy,
+  connectivity recovery, and D2 ViewModel integration.
+- **Verification Criteria:** A queued report survives process restart and schema
+  migration; transient failures retry; permanent failures stop; duplicate queue
+  entries are rejected; metadata and screenshot upload order is preserved.
 
 ---
 
@@ -62,3 +69,7 @@ Before building release bundles (APKs/AABs) for distribution:
 - [ ] Proguard obfuscation rules are verified.
 - [ ] APK size is verified as within targets.
 - [ ] No hardcoded passwords, keys, or debug flags exist in build properties.
+- [ ] `SAFE75_API_BASE_URL` points to the production HTTPS backend.
+- [ ] `./gradlew :app:lintDebug` passes without errors.
+- [ ] `./gradlew :app:assembleRelease` passes R8 processing.
+- [ ] Physical-device offline, recovery, restart, and reboot flows pass.

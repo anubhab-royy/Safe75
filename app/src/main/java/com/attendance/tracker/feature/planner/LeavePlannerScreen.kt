@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.planner
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +36,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -61,8 +63,8 @@ fun LeavePlannerScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val leaveDates by viewModel.selectedLeaveDates.collectAsState()
-    val plannerResult by viewModel.leavePlannerResult.collectAsState()
+    val leaveDates by viewModel.selectedLeaveDates.collectAsStateWithLifecycle()
+    val plannerResult by viewModel.leavePlannerResult.collectAsStateWithLifecycle()
 
     val calendar = Calendar.getInstance()
     val datePickerDialog = remember {
@@ -132,7 +134,7 @@ fun LeavePlannerScreen(
                 ) {
                     Icon(Icons.Default.DateRange, contentDescription = null)
                     Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
-                    Text("Select Date")
+                    Text(stringResource(R.string.select_date))
                 }
 
                 if (leaveDates.isNotEmpty()) {
@@ -142,7 +144,7 @@ fun LeavePlannerScreen(
                     ) {
                         Icon(Icons.Default.Clear, contentDescription = null)
                         Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
-                        Text("Clear All")
+                        Text(stringResource(R.string.clear_all))
                     }
                 }
             }

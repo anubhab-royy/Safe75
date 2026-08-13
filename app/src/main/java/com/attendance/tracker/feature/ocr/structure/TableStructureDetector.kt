@@ -5,6 +5,7 @@ import org.opencv.core.Mat
 import org.opencv.core.MatOfPoint
 import org.opencv.core.Rect
 import org.opencv.imgproc.Imgproc
+import com.attendance.tracker.feature.ocr.diagnostics.OcrInstrumentation
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -60,92 +61,108 @@ class OpenCVGridDetector @Inject constructor() : TableStructureDetector {
         verticalLines: Mat,
         gridMask: Mat
     ): TableGridModel {
+        val gridStart = System.nanoTime()
         // Crop horizontal, vertical, and combined grid masks to the table's region
         val subHoriz = Mat(horizontalLines, tableRect)
         val subVert = Mat(verticalLines, tableRect)
         val subGrid = Mat(gridMask, tableRect)
 
-        // 1. Extract Horizontal Line Y coordinates
+        val hierarchy = Mat()
         val hContours = ArrayList<MatOfPoint>()
-        Imgproc.findContours(subHoriz, hContours, Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE)
-        val yCoords = ArrayList<Int>()
-        yCoords.add(0)
-        yCoords.add(tableRect.height)
-        for (contour in hContours) {
-            val r = Imgproc.boundingRect(contour)
-            yCoords.add(r.y + r.height / 2)
-        }
-        val rowBoundaries = clusterCoords(yCoords, tolerance = 12).sorted()
-
-        // 2. Extract Vertical Line X coordinates
         val vContours = ArrayList<MatOfPoint>()
-        Imgproc.findContours(subVert, vContours, Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE)
-        val xCoords = ArrayList<Int>()
-        xCoords.add(0)
-        xCoords.add(tableRect.width)
-        for (contour in vContours) {
-            val r = Imgproc.boundingRect(contour)
-            xCoords.add(r.x + r.width / 2)
-        }
-        val colBoundaries = clusterCoords(xCoords, tolerance = 12).sorted()
-
-        // 3. Find cell contours using negative space (invert the grid)
-        val subGridInverted = Mat()
-        Core.bitwise_not(subGrid, subGridInverted)
-
         val cellContours = ArrayList<MatOfPoint>()
-        Imgproc.findContours(subGridInverted, cellContours, Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE)
-
+        val rowBoundaries: List<Int>
+        val colBoundaries: List<Int>
         val cells = ArrayList<TableGridCell>()
-        val minCellArea = (tableRect.width * tableRect.height) * 0.0001 // Filter tiny noise cells
+        val subGridInverted = Mat()
 
-        for (contour in cellContours) {
-            val cellRect = Imgproc.boundingRect(contour)
-            val area = cellRect.width * cellRect.height
-            if (area < minCellArea || cellRect.width >= tableRect.width * 0.98 || cellRect.height >= tableRect.height * 0.98) {
-                // Ignore noise or full table bounding boxes
-                continue
+        try {
+            // 1. Extract Horizontal Line Y coordinates
+            Imgproc.findContours(subHoriz, hContours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE)
+            val yCoords = ArrayList<Int>()
+            yCoords.add(0)
+            yCoords.add(tableRect.height)
+            for (contour in hContours) {
+                val r = Imgproc.boundingRect(contour)
+                yCoords.add(r.y + r.height / 2)
             }
+            rowBoundaries = clusterCoords(yCoords, tolerance = 12).sorted()
 
-            // Map pixel coordinates to row/col indices using closest boundaries
-            val startRow = findClosestBoundaryIndex(cellRect.y, rowBoundaries)
-            val endRow = findClosestBoundaryIndex(cellRect.y + cellRect.height, rowBoundaries)
-            val rowSpan = maxOf(1, endRow - startRow)
+            // 2. Extract Vertical Line X coordinates
+            Imgproc.findContours(subVert, vContours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE)
+            val xCoords = ArrayList<Int>()
+            xCoords.add(0)
+            xCoords.add(tableRect.width)
+            for (contour in vContours) {
+                val r = Imgproc.boundingRect(contour)
+                xCoords.add(r.x + r.width / 2)
+            }
+            colBoundaries = clusterCoords(xCoords, tolerance = 12).sorted()
 
-            val startCol = findClosestBoundaryIndex(cellRect.x, colBoundaries)
-            val endCol = findClosestBoundaryIndex(cellRect.x + cellRect.width, colBoundaries)
-            val colSpan = maxOf(1, endCol - startCol)
+            // 3. Find cell contours using negative space (invert the grid)
+            Core.bitwise_not(subGrid, subGridInverted)
 
-            // Convert cell coordinates back to absolute image coordinates
-            val absoluteRect = Rect(
-                tableRect.x + cellRect.x,
-                tableRect.y + cellRect.y,
-                cellRect.width,
-                cellRect.height
-            )
+            Imgproc.findContours(subGridInverted, cellContours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE)
 
-            cells.add(
-                TableGridCell(
-                    startRow = startRow,
-                    startCol = startCol,
-                    rowSpan = rowSpan,
-                    colSpan = colSpan,
-                    rect = absoluteRect
+            val minCellArea = (tableRect.width * tableRect.height) * 0.0001 // Filter tiny noise cells
+
+            for (contour in cellContours) {
+                val cellRect = Imgproc.boundingRect(contour)
+                val area = cellRect.width * cellRect.height
+                if (area < minCellArea || cellRect.width >= tableRect.width * 0.98 || cellRect.height >= tableRect.height * 0.98) {
+                    // Ignore noise or full table bounding boxes
+                    continue
+                }
+
+                // Map pixel coordinates to row/col indices using closest boundaries
+                val startRow = findClosestBoundaryIndex(cellRect.y, rowBoundaries)
+                val endRow = findClosestBoundaryIndex(cellRect.y + cellRect.height, rowBoundaries)
+                val rowSpan = maxOf(1, endRow - startRow)
+
+                val startCol = findClosestBoundaryIndex(cellRect.x, colBoundaries)
+                val endCol = findClosestBoundaryIndex(cellRect.x + cellRect.width, colBoundaries)
+                val colSpan = maxOf(1, endCol - startCol)
+
+                // Convert cell coordinates back to absolute image coordinates
+                val absoluteRect = Rect(
+                    tableRect.x + cellRect.x,
+                    tableRect.y + cellRect.y,
+                    cellRect.width,
+                    cellRect.height
                 )
-            )
-        }
 
-        // Release sub-mats
-        subHoriz.release()
-        subVert.release()
-        subGrid.release()
-        subGridInverted.release()
-        hContours.forEach { it.release() }
-        vContours.forEach { it.release() }
-        cellContours.forEach { it.release() }
+                cells.add(
+                    TableGridCell(
+                        startRow = startRow,
+                        startCol = startCol,
+                        rowSpan = rowSpan,
+                        colSpan = colSpan,
+                        rect = absoluteRect
+                    )
+                )
+            }
+        } finally {
+            // Release sub-mats and hierarchy
+            subHoriz.release()
+            subVert.release()
+            subGrid.release()
+            subGridInverted.release()
+            hierarchy.release()
+            hContours.forEach { it.release() }
+            vContours.forEach { it.release() }
+            cellContours.forEach { it.release() }
+        }
 
         val rowsCount = maxOf(1, rowBoundaries.size - 1)
         val colsCount = maxOf(1, colBoundaries.size - 1)
+
+        OcrInstrumentation.i(
+            OcrInstrumentation.TAG_GRID,
+            "GRID tableRect=(${tableRect.x},${tableRect.y},${tableRect.width},${tableRect.height}) " +
+                "rows=$rowsCount cols=$colsCount cells=${cells.size} " +
+                "rowBoundaries=${rowBoundaries.joinToString()} colBoundaries=${colBoundaries.joinToString()} " +
+                "elapsed=${OcrInstrumentation.elapsedMs(gridStart)}ms"
+        )
 
         return TableGridModel(rows = rowsCount, cols = colsCount, cells = cells)
     }

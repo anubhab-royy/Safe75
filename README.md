@@ -16,7 +16,7 @@ Safe75 is a robust, offline-first Android application designed to help universit
 *   **Home-Screen Widget:** A Material 3 Glance widget showing your overall percentages, today's schedule progress, next class details, and quick logging actions.
 *   **Automated Productivity Workers:** Background services schedule daily morning summary alerts, end-of-day unmarked logs nudges, and post-class logging actions.
 *   **Semester Lifecycle & Archiving:** Start fresh for new semesters while keeping historical attendance sheets, analytics, and subjects archived safely.
-*   **Offline-First & Privacy-Focused:** Safe75 operates with **zero internet permissions**. All OCR scanning, data storage, and backup files remain local on your device.
+*   **Offline-First & Privacy-Focused:** Attendance data remains local. Explicitly submitted bug reports are queued on-device and uploaded securely with diagnostics and an optional screenshot when connectivity is available.
 
 ---
 
@@ -32,6 +32,7 @@ Safe75 is a robust, offline-first Android application designed to help universit
 *   **Background Tasks:** WorkManager
 *   **Computer Vision & OCR:** OpenCV (table cell parsing) + Google ML Kit Text Recognition (on-device)
 *   **Build System:** Gradle Kotlin DSL (with Version Catalog)
+*   **Bug Reporting:** Room queue, WorkManager retries, HMAC-authenticated backend, MongoDB metadata, and Cloudflare R2 screenshots
 
 ---
 
@@ -88,6 +89,10 @@ graph LR
     ```bash
     git clone https://github.com/username/Safe75.git
     ```
+    Set `SAFE75_API_BASE_URL` to the deployed backend URL when building a release:
+    ```bash
+    SAFE75_API_BASE_URL=https://api.example.com/ ./gradlew assembleRelease
+    ```
 2.  **Compile Debug APK:**
     ```bash
     ./gradlew assembleDebug
@@ -101,6 +106,14 @@ graph LR
     ./gradlew assembleRelease bundleRelease
     ```
     *Note: Unsigned release artifacts will be located under `app/build/outputs/apk/release/` and `app/build/outputs/bundle/release/` respectively.*
+
+### Privacy and Connectivity
+
+The app requires `INTERNET` and `ACCESS_NETWORK_STATE` only for device enrollment
+and explicit bug-report uploads. Attendance records, timetable data, notes, and
+backup exports are not included in bug reports and automatic Android backups are
+disabled. See [Bug Reporting](docs/BugReporting.md) and the
+[Privacy Policy](docs/release/PrivacyPolicy.md).
 
 ---
 

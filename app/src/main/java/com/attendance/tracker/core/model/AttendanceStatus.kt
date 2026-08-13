@@ -6,5 +6,6 @@ package com.attendance.tracker.core.model
 enum class AttendanceStatus {
     PRESENT,
     ABSENT,
-    CANCELLED
+    CANCELLED,
+    MEDICAL_LEAVE
 }

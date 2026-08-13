@@ -86,6 +86,7 @@ class FakeAttendanceDao : AttendanceDao {
     override fun observeTodayAttendance(date: LocalDate): Flow<List<AttendanceEntity>> = flowOf(emptyList())
     override fun searchAttendance(query: String): Flow<List<AttendanceEntity>> = flowOf(emptyList())
     override suspend fun checkDuplicateAttendance(subjectId: Long, scheduleId: Long, date: LocalDate): Boolean = false
+    override suspend fun getAttendanceRecord(subjectId: Long, scheduleId: Long, date: LocalDate): AttendanceEntity? = list.find { it.subjectId == subjectId && it.scheduleId == scheduleId && it.date == date }
     override fun countPresent(): Flow<Int> = flowOf(list.count { it.status == AttendanceStatus.PRESENT })
     override fun countAbsent(): Flow<Int> = flowOf(list.count { it.status == AttendanceStatus.ABSENT })
     override fun countCancelled(): Flow<Int> = flowOf(list.count { it.status == AttendanceStatus.CANCELLED })
@@ -111,7 +112,13 @@ class DataIntegrityVerifierTest {
         scheduleDao = FakeScheduleDao()
         semesterDao = FakeSemesterDao()
         attendanceDao = FakeAttendanceDao()
-        verifier = DataIntegrityVerifier(subjectDao, scheduleDao, semesterDao, attendanceDao)
+        
+        val testDispatcherProvider = object : com.attendance.tracker.core.common.DispatcherProvider {
+            override val main = kotlinx.coroutines.test.UnconfinedTestDispatcher()
+            override val io = kotlinx.coroutines.test.UnconfinedTestDispatcher()
+            override val default = kotlinx.coroutines.test.UnconfinedTestDispatcher()
+        }
+        verifier = DataIntegrityVerifier(subjectDao, scheduleDao, semesterDao, attendanceDao, testDispatcherProvider)
     }
 
     @Test

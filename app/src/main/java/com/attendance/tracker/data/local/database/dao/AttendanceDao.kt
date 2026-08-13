@@ -66,6 +66,9 @@ interface AttendanceDao {
     """)
     suspend fun checkDuplicateAttendance(subjectId: Long, scheduleId: Long, date: LocalDate): Boolean
 
+    @Query("SELECT * FROM attendance_records WHERE subjectId = :subjectId AND scheduleId = :scheduleId AND date = :date LIMIT 1")
+    suspend fun getAttendanceRecord(subjectId: Long, scheduleId: Long, date: LocalDate): AttendanceEntity?
+
     @Query("SELECT COUNT(*) FROM attendance_records WHERE status = 'PRESENT'")
     fun countPresent(): Flow<Int>
 

@@ -74,6 +74,26 @@ class FakeAttendanceRepository : AttendanceRepository {
     override fun searchAttendance(query: String): Flow<List<Attendance>> = flow {
         emit(list.filter { it.remarks?.contains(query) == true })
     }
+
+    override suspend fun saveOcrAttendanceBatch(records: List<Attendance>): Int {
+        var count = 0
+        for (record in records) {
+            val existing = list.find { it.subjectId == record.subjectId && it.scheduleId == record.scheduleId && it.date == record.date }
+            if (existing == null) {
+                val id = if (record.id == 0L) (list.size + 1).toLong() else record.id
+                list.add(record.copy(id = id))
+                count++
+            } else if (existing.remarks?.contains("Imported via OCR") == true) {
+                val idx = list.indexOfFirst { it.id == existing.id }
+                if (idx != -1) {
+                    list[idx] = existing.copy(status = record.status, updatedAt = System.currentTimeMillis())
+                    count++
+                }
+            }
+            // Existing manual record is preserved (not updated)
+        }
+        return count
+    }
 }
 
 class AttendanceUseCaseTest {
@@ -123,5 +143,74 @@ class AttendanceUseCaseTest {
         val rows = deleteUseCase(record)
         assertEquals(1, rows)
         assertTrue(repository.list.isEmpty())
+    }
+
+    @Test
+    fun testUpdateAttendance_supportsAllMedicalLeaveTransitionsAndPreservesCreatedAt() = runTest {
+        val statuses = listOf(
+            AttendanceStatus.PRESENT,
+            AttendanceStatus.ABSENT,
+            AttendanceStatus.CANCELLED,
+            AttendanceStatus.MEDICAL_LEAVE
+        )
+        val originalCreatedAt = 100L
+
+        statuses.forEach { fromStatus ->
+            statuses.forEach { toStatus ->
+                repository.list.clear()
+                val updateStartedAt = System.currentTimeMillis()
+                repository.list.add(
+                    Attendance(
+                        id = 5L,
+                        subjectId = 1L,
+                        scheduleId = 10L,
+                        date = LocalDate.now(),
+                        status = fromStatus,
+                        createdAt = originalCreatedAt,
+                        updatedAt = 200L
+                    )
+                )
+
+                val result = updateUseCase(
+                    Attendance(
+                        id = 5L,
+                        subjectId = 1L,
+                        scheduleId = 10L,
+                        date = LocalDate.now(),
+                        status = toStatus,
+                        createdAt = 999L,
+                        updatedAt = 999L
+                    )
+                )
+
+                assertTrue("$fromStatus -> $toStatus", result is ValidationResult.Valid)
+                assertEquals(1, repository.list.size)
+                val stored = repository.list.single()
+                assertEquals(5L, stored.id)
+                assertEquals(1L, stored.subjectId)
+                assertEquals(10L, stored.scheduleId)
+                assertEquals(toStatus, stored.status)
+                assertEquals(originalCreatedAt, stored.createdAt)
+                assertTrue(stored.updatedAt >= updateStartedAt)
+            }
+        }
+    }
+
+    @Test
+    fun testUpdateAttendance_returnsInvalidWhenNoRowsAreUpdated() = runTest {
+        val result = updateUseCase(
+            Attendance(
+                id = 999L,
+                subjectId = 1L,
+                scheduleId = 10L,
+                date = LocalDate.now(),
+                status = AttendanceStatus.MEDICAL_LEAVE
+            )
+        )
+
+        assertEquals(
+            ValidationResult.Invalid("Attendance record was not found"),
+            result
+        )
     }
 }

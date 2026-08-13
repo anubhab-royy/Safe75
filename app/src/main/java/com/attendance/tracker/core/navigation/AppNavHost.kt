@@ -32,6 +32,7 @@ import com.attendance.tracker.feature.backup.RestoreScreen
 import com.attendance.tracker.feature.backup.SemesterResetScreen
 import com.attendance.tracker.feature.backfill.BackfillWizardScreen
 import com.attendance.tracker.feature.integrity.IntegrityScreen
+import com.attendance.tracker.feature.bugreport.BugReportScreen
 
 /**
  * Root Navigation Graph configuring Splash, Welcome, and transitions to Main content.
@@ -62,7 +63,12 @@ fun AppNavHost(
         ) {
             composable(Screen.Splash.route) {
                 SplashScreen(
-                    onNavigateNext = {
+                    onNavigateToMain = {
+                        navController.navigate(Screen.MainGraph.route) {
+                            popUpTo(Screen.RootGraph.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToWelcome = {
                         navController.navigate(Screen.Welcome.route) {
                             popUpTo(Screen.Splash.route) { inclusive = true }
                         }
@@ -125,6 +131,9 @@ fun AppNavHost(
                 },
                 onNavigateToIntegrity = {
                     navController.navigate(Screen.Integrity.route)
+                },
+                onNavigateToBugReport = {
+                    navController.navigate(Screen.BugReport.route)
                 }
             )
         }
@@ -198,6 +207,10 @@ fun AppNavHost(
                     navController.navigate(Screen.AttendanceDetails.createRoute(attendanceId))
                 }
             )
+        }
+
+        composable(Screen.BugReport.route) {
+            BugReportScreen(onNavigateBack = { navController.popBackStack() })
         }
 
         composable(

@@ -129,6 +129,9 @@ class BackupViewModel @Inject constructor(
                 showRestoreOptions = false,
                 previewData = null
             )
+            if (result is RestoreResult.Success) {
+                loadCurrentSnapshot()
+            }
         }
     }
 

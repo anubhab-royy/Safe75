@@ -31,7 +31,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,7 +60,7 @@ fun RestoreScreen(
     onNavigateBack: () -> Unit,
     viewModel: BackupViewModel = hiltViewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedImportUri by remember { mutableStateOf<Uri?>(null) }
 
     val importLauncher = rememberLauncherForActivityResult(
@@ -185,12 +185,13 @@ fun RestoreScreen(
     }
 
     // 2. Restore options dialog.
-    if (state.showRestoreOptions && preview != null && selectedImportUri != null) {
+    val importUri = selectedImportUri
+    if (state.showRestoreOptions && preview != null && importUri != null) {
         RestoreOptionsDialog(
             previewData = preview,
             options = state.restoreOptions,
             onOptionsChanged = viewModel::updateRestoreOptions,
-            onConfirm = { viewModel.importBackup(selectedImportUri!!, state.restoreOptions) },
+            onConfirm = { viewModel.importBackup(importUri, state.restoreOptions) },
             onDismiss = viewModel::dismissRestoreDialog
         )
     }

@@ -10,7 +10,7 @@ import com.attendance.tracker.domain.model.IntegrityCategory
 import com.attendance.tracker.domain.model.IntegrityIssue
 import com.attendance.tracker.domain.model.IntegrityReport
 import com.attendance.tracker.domain.model.IntegritySeverity
-import kotlinx.coroutines.Dispatchers
+import com.attendance.tracker.core.common.DispatcherProvider
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,13 +30,14 @@ class DataIntegrityVerifier @Inject constructor(
     private val subjectDao: SubjectDao,
     private val scheduleDao: ScheduleDao,
     private val semesterDao: SemesterDao,
-    private val attendanceDao: AttendanceDao
+    private val attendanceDao: AttendanceDao,
+    private val dispatcherProvider: DispatcherProvider
 ) {
 
     /**
      * Executes a full integrity scan on the live database.
      */
-    suspend fun verify(): IntegrityReport = withContext(Dispatchers.IO) {
+    suspend fun verify(): IntegrityReport = withContext(dispatcherProvider.io) {
         val subjects = subjectDao.getSubjects()
         val schedules = scheduleDao.getAllSchedules()
         val semesters = semesterDao.getVersions()

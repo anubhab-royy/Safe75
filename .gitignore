@@ -1,6 +1,10 @@
 # Gradle
 .gradle/
 **/build/
+# Environmental Values
+.env
+.env.*
+!.env.example
 
 # Local configuration
 local.properties

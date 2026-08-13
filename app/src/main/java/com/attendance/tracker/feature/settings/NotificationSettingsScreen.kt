@@ -20,7 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,10 +39,10 @@ fun NotificationSettingsScreen(
     onNavigateBack: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val overallEnabled by viewModel.notificationsState.collectAsState()
-    val morningEnabled by viewModel.morningReminderState.collectAsState()
-    val attendanceEnabled by viewModel.attendanceReminderState.collectAsState()
-    val missedEnabled by viewModel.missedReminderState.collectAsState()
+    val overallEnabled by viewModel.notificationsState.collectAsStateWithLifecycle()
+    val morningEnabled by viewModel.morningReminderState.collectAsStateWithLifecycle()
+    val attendanceEnabled by viewModel.attendanceReminderState.collectAsStateWithLifecycle()
+    val missedEnabled by viewModel.missedReminderState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

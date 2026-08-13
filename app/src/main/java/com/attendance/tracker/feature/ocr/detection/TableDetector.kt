@@ -6,6 +6,7 @@ import org.opencv.core.MatOfPoint
 import org.opencv.core.Rect
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
+import com.attendance.tracker.feature.ocr.diagnostics.OcrInstrumentation
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,6 +36,7 @@ class TableDetector @Inject constructor() {
         val horizontalStructure = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(horizontalSize.toDouble(), 1.0))
         Imgproc.erode(horizontal, horizontal, horizontalStructure)
         Imgproc.dilate(horizontal, horizontal, horizontalStructure)
+        horizontalStructure.release()
 
         val vertical = threshMat.clone()
         val scaleV = 35 // Kernel scale factor for vertical lines
@@ -42,6 +44,7 @@ class TableDetector @Inject constructor() {
         val verticalStructure = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(1.0, verticalSize.toDouble()))
         Imgproc.erode(vertical, vertical, verticalStructure)
         Imgproc.dilate(vertical, vertical, verticalStructure)
+        verticalStructure.release()
 
         val combined = Mat()
         Core.bitwise_or(horizontal, vertical, combined)
@@ -57,6 +60,7 @@ class TableDetector @Inject constructor() {
      * @return List of [Rect] representing table boundaries.
      */
     fun detectTables(threshMat: Mat, gridMasks: GridMasks): List<Rect> {
+        val tableStart = System.nanoTime()
         val contours = ArrayList<MatOfPoint>()
         val hierarchy = Mat()
         
@@ -78,6 +82,13 @@ class TableDetector @Inject constructor() {
 
         hierarchy.release()
         contours.forEach { it.release() }
+
+        OcrInstrumentation.i(
+            OcrInstrumentation.TAG_TABLE,
+            "TABLE tables=${tables.size} image=${threshMat.cols()}x${threshMat.rows()} " +
+                "rects=${tables.joinToString(prefix = "[", postfix = "]") { "(${it.x},${it.y},${it.width},${it.height})" }} " +
+                "elapsed=${OcrInstrumentation.elapsedMs(tableStart)}ms"
+        )
 
         return tables
     }

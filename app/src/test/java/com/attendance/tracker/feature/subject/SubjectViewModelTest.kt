@@ -1,6 +1,10 @@
 package com.attendance.tracker.feature.subject
 
 import com.attendance.tracker.core.common.UiState
+import com.attendance.tracker.core.model.AttendanceStatus
+import com.attendance.tracker.domain.model.Attendance
+import com.attendance.tracker.domain.model.SemesterVersion
+import com.attendance.tracker.domain.model.Subject
 import com.attendance.tracker.domain.usecase.subject.AddSubjectUseCase
 import com.attendance.tracker.domain.usecase.subject.DeleteSubjectUseCase
 import com.attendance.tracker.domain.usecase.subject.FakeSubjectRepository
@@ -27,6 +31,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
 
 /**
  * Unit tests verifying view model reactive flows in [SubjectViewModel].
@@ -39,6 +44,7 @@ class SubjectViewModelTest {
     private lateinit var repository: FakeSubjectRepository
     private lateinit var attendanceRepo: LocalFakeAttendanceRepository
     private lateinit var settingsRepo: FakeSettingsRepository
+    private lateinit var semesterRepo: FakeSemesterRepository
     private lateinit var viewModel: SubjectViewModel
 
     @Before
@@ -47,6 +53,7 @@ class SubjectViewModelTest {
         repository = FakeSubjectRepository()
         attendanceRepo = LocalFakeAttendanceRepository()
         settingsRepo = FakeSettingsRepository()
+        semesterRepo = FakeSemesterRepository()
 
         val observeUseCase = ObserveSubjectsUseCase(repository)
         val addUseCase = AddSubjectUseCase(repository)
@@ -67,7 +74,7 @@ class SubjectViewModelTest {
             attendanceRepository = attendanceRepo,
             scheduleRepository = FakeScheduleRepository(),
             settingsRepository = settingsRepo,
-            semesterRepository = FakeSemesterRepository(),
+            semesterRepository = semesterRepo,
             calculateStatisticsUseCase = CalculateAttendanceStatisticsUseCase()
         )
     }
@@ -165,6 +172,58 @@ class SubjectViewModelTest {
 
         assertTrue(repository.subjects.isEmpty())
     }
+
+    @Test
+    fun testSubjectStats_exposeWithMedicalPercentageWithoutChangingNormalPercentage() = runTest {
+        repository.subjects.add(
+            Subject(
+                id = 1L,
+                name = "Mathematics",
+                requiredAttendancePercentage = 75,
+                personalAttendanceGoal = 85
+            )
+        )
+        val date = LocalDate.now()
+        attendanceRepo.insertAttendance(
+            Attendance(id = 1L, subjectId = 1L, scheduleId = 10L, date = date, status = AttendanceStatus.PRESENT)
+        )
+        attendanceRepo.insertAttendance(
+            Attendance(id = 2L, subjectId = 1L, scheduleId = 10L, date = date.minusDays(1), status = AttendanceStatus.ABSENT)
+        )
+        attendanceRepo.insertAttendance(
+            Attendance(id = 3L, subjectId = 1L, scheduleId = 10L, date = date.minusDays(2), status = AttendanceStatus.MEDICAL_LEAVE)
+        )
+        semesterRepo.setActive(
+            SemesterVersion(
+                id = 1L,
+                name = "Semester 1",
+                isActive = true,
+                startDate = date.minusDays(3),
+                endDate = date.plusDays(1)
+            )
+        )
+        viewModel = SubjectViewModel(
+            observeSubjectsUseCase = ObserveSubjectsUseCase(repository),
+            addSubjectUseCase = AddSubjectUseCase(repository),
+            updateSubjectUseCase = UpdateSubjectUseCase(repository),
+            deleteSubjectUseCase = DeleteSubjectUseCase(repository),
+            getSubjectUseCase = GetSubjectUseCase(repository),
+            getSubjectsUseCase = GetSubjectsUseCase(repository),
+            validator = SubjectValidator(),
+            attendanceRepository = attendanceRepo,
+            scheduleRepository = FakeScheduleRepository(),
+            settingsRepository = settingsRepo,
+            semesterRepository = semesterRepo,
+            calculateStatisticsUseCase = CalculateAttendanceStatisticsUseCase()
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.subjectsState.value
+        assertTrue(state is UiState.Success)
+        val stats = (state as UiState.Success).data.single()
+        assertEquals(33.3, stats.percentage, 0.1)
+        assertEquals(66.7, stats.withMedicalPercentage, 0.1)
+    }
 }
 
 class FakeSettingsRepository : com.attendance.tracker.domain.repository.SettingsRepository {
@@ -186,10 +245,12 @@ class FakeSettingsRepository : com.attendance.tracker.domain.repository.Settings
 }
 
 class FakeSemesterRepository : com.attendance.tracker.domain.repository.SemesterRepository {
+    private val activeVersion = MutableStateFlow<SemesterVersion?>(null)
+
     override fun observeVersions(): kotlinx.coroutines.flow.Flow<List<com.attendance.tracker.domain.model.SemesterVersion>> =
         kotlinx.coroutines.flow.flowOf(emptyList())
     override fun observeActiveVersion(): kotlinx.coroutines.flow.Flow<com.attendance.tracker.domain.model.SemesterVersion?> =
-        kotlinx.coroutines.flow.flowOf(null)
+        activeVersion
     override suspend fun getVersions(): List<com.attendance.tracker.domain.model.SemesterVersion> = emptyList()
     override suspend fun getVersion(id: Long): com.attendance.tracker.domain.model.SemesterVersion? = null
     override suspend fun getActiveVersion(): com.attendance.tracker.domain.model.SemesterVersion? = null
@@ -197,4 +258,8 @@ class FakeSemesterRepository : com.attendance.tracker.domain.repository.Semester
     override suspend fun updateVersion(version: com.attendance.tracker.domain.model.SemesterVersion): Int = 0
     override suspend fun deleteVersion(version: com.attendance.tracker.domain.model.SemesterVersion): Int = 0
     override suspend fun switchActiveVersion(versionId: Long) {}
+
+    fun setActive(version: SemesterVersion) {
+        activeVersion.value = version
+    }
 }

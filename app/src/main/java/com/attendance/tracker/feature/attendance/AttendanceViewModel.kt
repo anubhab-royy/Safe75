@@ -204,7 +204,17 @@ class AttendanceViewModel @Inject constructor(
         _subjectsMap
     ) { history, _ ->
         if (history.isEmpty()) {
-            AttendanceStatistics(0, 0, 0, 0, 100.0, 0, 0)
+            AttendanceStatistics(
+                presentCount = 0,
+                absentCount = 0,
+                cancelledCount = 0,
+                medicalLeaveCount = 0,
+                totalClasses = 0,
+                attendancePercentage = 100.0,
+                withMedicalPercentage = 100.0,
+                remainingSafeClasses = 0,
+                classesNeededToReachGoal = 0
+            )
         } else {
             calculateAttendanceStatisticsUseCase(history, 75, 85)
         }

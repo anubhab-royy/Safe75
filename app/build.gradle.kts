@@ -28,9 +28,21 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
+val configuredApiBaseUrl = providers.gradleProperty("SAFE75_API_BASE_URL").orNull
+    ?: System.getenv("SAFE75_API_BASE_URL")
+    ?: "https://safe75-backend.example.com/"
+val escapedApiBaseUrl = configuredApiBaseUrl
+    .replace("\\", "\\\\")
+    .replace("\"", "\\\"")
+
 android {
     namespace = "com.attendance.tracker"
     compileSdk = 36
+    ksp {
+        // Export Room schemas so migrations can be versioned and validated with
+        // MigrationTestHelper (Phase A4 production migration strategy).
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
     defaultConfig {
         applicationId = "com.attendance.tracker"
         minSdk = 26
@@ -40,6 +52,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+
+        buildConfigField("String", "API_BASE_URL", "\"$escapedApiBaseUrl\"")
     }
 
     signingConfigs {
@@ -89,9 +103,15 @@ android {
         }
     }
 
+    sourceSets {
+        // Package exported Room schemas into the androidTest APK so
+        // MigrationTestHelper can validate registered migrations.
+        getByName("androidTest").assets.srcDirs(files("$projectDir/schemas"))
+    }
+
     lint {
-        abortOnError = false
-        checkReleaseBuilds = false
+        abortOnError = true
+        checkReleaseBuilds = true
     }
 }
 
@@ -129,6 +149,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockito.core)
+    testImplementation(libs.mockk)
+    testImplementation(libs.mockwebserver)
     testImplementation("org.openpnp:opencv:4.9.0-0")
 
     // Instrumented tests: jUnit rules and runners
@@ -136,6 +158,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.mockito.core)
+    androidTestImplementation("org.mockito:mockito-android:5.11.0")
 
     // Navigation Compose
     implementation(libs.androidx.navigation.compose)
@@ -168,6 +192,15 @@ dependencies {
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
 
+    // Networking: Retrofit + OkHttp
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+
+    // Security: Jetpack Security (EncryptedSharedPreferences backed by Android Keystore)
+    implementation(libs.androidx.security.crypto)
+
     // Splash Screen
     implementation(libs.androidx.core.splashscreen)
 
@@ -180,4 +213,7 @@ dependencies {
 
     // UI Automator for accessibility/widget smoke tests
     androidTestImplementation(libs.androidx.test.uiautomator)
+
+    // Room migration validation (MigrationTestHelper)
+    androidTestImplementation(libs.room.testing)
 }

@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.attendance
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,8 +63,8 @@ fun AttendanceDetailsScreen(
     viewModel: AttendanceViewModel = hiltViewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val subjectsMap by viewModel.subjectsMap.collectAsState()
-    val validationState by viewModel.validationState.collectAsState()
+    val subjectsMap by viewModel.subjectsMap.collectAsStateWithLifecycle()
+    val validationState by viewModel.validationState.collectAsStateWithLifecycle()
 
     var record by remember { mutableStateOf<Attendance?>(null) }
     var status by remember { mutableStateOf(AttendanceStatus.PRESENT) }
@@ -86,8 +88,8 @@ fun AttendanceDetailsScreen(
     if (showDeleteConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = false },
-            title = { Text("Delete Attendance Log") },
-            text = { Text("Are you sure you want to delete this log? This cannot be undone.") },
+            title = { Text(stringResource(R.string.delete_attendance_log)) },
+            text = { Text(stringResource(R.string.are_you_sure_you_want)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -110,7 +112,7 @@ fun AttendanceDetailsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -125,7 +127,8 @@ fun AttendanceDetailsScreen(
             )
         }
     ) { paddingValues ->
-        if (record == null) {
+        val currentRecord = record
+        if (currentRecord == null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -133,14 +136,13 @@ fun AttendanceDetailsScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (isLoaded) {
-                    Text("Attendance log not found.")
+                    Text(stringResource(R.string.attendance_log_not_found))
                 } else {
                     LoadingIndicator()
                 }
             }
         } else {
-            val targetRecord = record!!
-            val subjectName = subjectsMap[targetRecord.subjectId]?.name ?: "Unknown Subject"
+            val subjectName = subjectsMap[currentRecord.subjectId]?.name ?: "Unknown Subject"
 
             Column(
                 modifier = Modifier
@@ -166,7 +168,7 @@ fun AttendanceDetailsScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Date: ${targetRecord.date}",
+                            text = "Date: ${currentRecord.date}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                         )
@@ -197,13 +199,18 @@ fun AttendanceDetailsScreen(
                         isSelected = status == AttendanceStatus.CANCELLED,
                         onClick = { status = AttendanceStatus.CANCELLED }
                     )
+                    AttendanceStatusRow(
+                        label = stringResource(R.string.medical_leave),
+                        isSelected = status == AttendanceStatus.MEDICAL_LEAVE,
+                        onClick = { status = AttendanceStatus.MEDICAL_LEAVE }
+                    )
                 }
 
                 // Remarks TextField
                 OutlinedTextField(
                     value = remarks,
                     onValueChange = { remarks = it },
-                    label = { Text("Remarks (Optional)") },
+                    label = { Text(stringResource(R.string.remarks_optional)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -227,16 +234,16 @@ fun AttendanceDetailsScreen(
                         onClick = onNavigateBack,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                     Button(
                         onClick = {
                             coroutineScope.launch {
                                 val success = viewModel.updateAttendance(
-                                    id = targetRecord.id,
-                                    subjectId = targetRecord.subjectId,
-                                    scheduleId = targetRecord.scheduleId,
-                                    date = targetRecord.date,
+                                    id = currentRecord.id,
+                                    subjectId = currentRecord.subjectId,
+                                    scheduleId = currentRecord.scheduleId,
+                                    date = currentRecord.date,
                                     status = status,
                                     remarks = remarks
                                 )
@@ -248,7 +255,7 @@ fun AttendanceDetailsScreen(
                         },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Save")
+                        Text(stringResource(R.string.save))
                     }
                 }
 
@@ -263,7 +270,7 @@ fun AttendanceDetailsScreen(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Delete Record")
+                    Text(stringResource(R.string.delete_record))
                 }
             }
         }

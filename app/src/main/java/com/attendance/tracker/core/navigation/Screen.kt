@@ -56,6 +56,7 @@ sealed class Screen(val route: String) {
     object SemesterReset : Screen("semester_reset_dest")
     object Archive : Screen("archive_dest")
     object Integrity : Screen("integrity_dest")
+    object BugReport : Screen("bug_report_dest")
 
     object ArchiveDetails : Screen("archive_details?archiveId={archiveId}") {
         fun createRoute(archiveId: Long): String {

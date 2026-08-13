@@ -10,8 +10,10 @@ import java.util.Locale
  * Leveraging modern java.time APIs available in API 26+.
  */
 object DateUtils {
-    private val defaultDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault())
-    private val displayDateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
+    // ISO 8601 data format. Kept locale-independent (Locale.ROOT) so values
+    // round-trip through OCR, backups, and exports even in locales that use
+    // non-ASCII digits or different date conventions.
+    private val defaultDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
 
     /**
      * Returns the current date as a [LocalDate].
@@ -26,7 +28,7 @@ object DateUtils {
             val formatter = DateTimeFormatter.ofPattern(pattern, Locale.getDefault())
             date.format(formatter)
         } catch (e: Exception) {
-            date.format(displayDateFormatter)
+            date.format(displayDateFormatter())
         }
     }
 
@@ -53,4 +55,11 @@ object DateUtils {
             }
         }
     }
+
+    /**
+     * Returns a locale-aware formatter for displaying dates. Created on demand
+     * so display follows the current locale even if it changes at runtime.
+     */
+    fun displayDateFormatter(): DateTimeFormatter =
+        DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
 }

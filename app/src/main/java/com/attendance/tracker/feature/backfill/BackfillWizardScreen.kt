@@ -28,7 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -60,7 +60,7 @@ fun BackfillWizardScreen(
     onNavigateBack: () -> Unit,
     viewModel: BackfillWizardViewModel = hiltViewModel()
 ) {
-    val items by viewModel.missingItems.collectAsState()
+    val items by viewModel.missingItems.collectAsStateWithLifecycle()
     val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM dd, yyyy") }
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
 

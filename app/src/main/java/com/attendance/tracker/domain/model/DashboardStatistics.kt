@@ -5,6 +5,7 @@ package com.attendance.tracker.domain.model
  */
 data class DashboardStatistics(
     val overallPercentage: Double,
+    val withMedicalPercentage: Double,
     val presentCount: Int,
     val absentCount: Int,
     val cancelledCount: Int,

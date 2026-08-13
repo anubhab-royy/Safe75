@@ -38,25 +38,29 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import com.attendance.tracker.domain.repository.SettingsRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 
 
 /**
  * ViewModel acting as the intelligence hub for analytics, simulator runs, and leaves.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val attendanceRepository: AttendanceRepository,
     private val subjectRepository: SubjectRepository,
     private val scheduleRepository: ScheduleRepository,
     private val semesterRepository: SemesterRepository,
-    private val calculateStatisticsUseCase: CalculateAttendanceStatisticsUseCase,
+    private val settingsRepository: SettingsRepository,
     private val getTodayAttendanceUseCase: GetTodayAttendanceUseCase,
     private val attendanceSimulatorUseCase: AttendanceSimulatorUseCase,
     private val leavePlannerUseCase: LeavePlannerUseCase,
     private val markAttendanceUseCase: MarkAttendanceUseCase,
     private val updateAttendanceUseCase: UpdateAttendanceUseCase,
     private val deleteAttendanceUseCase: DeleteAttendanceUseCase,
-    private val settingsRepository: SettingsRepository
+    private val calculateStatisticsUseCase: CalculateAttendanceStatisticsUseCase
 ) : ViewModel() {
 
     val attendanceGoal: StateFlow<Double> = settingsRepository.getAttendanceTarget()
@@ -96,12 +100,21 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             semesterRepository.observeActiveVersion().collect { active ->
                 _activeVersion.value = active
-                if (active != null) {
-                    scheduleRepository.observeSchedulesForVersion(active.id).collect { list ->
-                        _schedulesMap.value = list.associateBy { it.id }
+            }
+        }
+
+        viewModelScope.launch {
+            semesterRepository.observeActiveVersion()
+                .flatMapLatest { active ->
+                    if (active != null) {
+                        scheduleRepository.observeSchedulesForVersion(active.id)
+                    } else {
+                        flowOf(emptyList())
                     }
                 }
-            }
+                .collect { list ->
+                    _schedulesMap.value = list.associateBy { it.id }
+                }
         }
     }
 
@@ -233,6 +246,7 @@ class DashboardViewModel @Inject constructor(
         }
         DashboardStatistics(
             overallPercentage = stats.attendancePercentage,
+            withMedicalPercentage = stats.withMedicalPercentage,
             presentCount = stats.presentCount,
             absentCount = stats.absentCount,
             cancelledCount = stats.cancelledCount,
@@ -255,16 +269,16 @@ class DashboardViewModel @Inject constructor(
         _subjectsMap,
         attendanceGoal
     ) { history, subjects, goal ->
-        val gInt = goal.toInt()
         subjects.values.map { subject ->
             val subjectHistory = history.filter { it.subjectId == subject.id }
             val stats = calculateStatisticsUseCase(
                 subjectHistory,
-                gInt,
-                gInt
+                subject.requiredAttendancePercentage,
+                subject.personalAttendanceGoal
             )
             val status = when {
-                stats.attendancePercentage < goal -> "CRITICAL"
+                stats.totalClasses == 0 -> "NEUTRAL"
+                stats.attendancePercentage < subject.personalAttendanceGoal -> "CRITICAL"
                 stats.remainingSafeClasses == 0 -> "WARNING"
                 else -> "GOOD"
             }
@@ -275,8 +289,9 @@ class DashboardViewModel @Inject constructor(
                 presentCount = stats.presentCount,
                 totalClasses = stats.totalClasses,
                 percentage = stats.attendancePercentage,
-                requiredPercentage = goal.toInt(),
-                personalGoalPercentage = goal.toInt(),
+                withMedicalPercentage = stats.withMedicalPercentage,
+                requiredPercentage = subject.requiredAttendancePercentage,
+                personalGoalPercentage = subject.personalAttendanceGoal,
                 safetyStatus = status,
                 safeMissCount = stats.remainingSafeClasses,
                 classesNeeded = stats.classesNeededToReachGoal

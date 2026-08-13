@@ -12,13 +12,9 @@ import javax.inject.Singleton
  * Uses [kotlinx.serialization] for consistent serialization across the app.
  */
 @Singleton
-class BackupSerializer @Inject constructor() {
-
-    private val json = Json {
-        prettyPrint = true
-        encodeDefaults = true
-        ignoreUnknownKeys = true
-    }
+class BackupSerializer @Inject constructor(
+    private val json: Json
+) {
 
     /**
      * Encodes a [BackupData] object into a formatted JSON string.

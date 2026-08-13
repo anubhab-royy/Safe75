@@ -32,3 +32,4 @@ plugins {
 rootProject.name = "Safe75"
 include(":app")
 include(":benchmark")
+include(":backend")

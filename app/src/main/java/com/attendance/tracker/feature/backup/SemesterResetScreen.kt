@@ -1,5 +1,7 @@
 package com.attendance.tracker.feature.backup
 
+import com.attendance.tracker.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -43,7 +45,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -71,7 +73,7 @@ fun SemesterResetScreen(
     onNavigateBack: () -> Unit,
     viewModel: SemesterViewModel = hiltViewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.resetResult) {
@@ -217,7 +219,7 @@ private fun ResetOptionsStep(
             onClick = onNext,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Preview Impact")
+            Text(stringResource(R.string.preview_impact))
             Spacer(Modifier.width(8.dp))
             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
         }
@@ -317,10 +319,10 @@ private fun ResetPreviewStep(
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f)) { Text("Back") }
+            OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.back)) }
             Button(onClick = onNext, modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) { Text("Continue") }
+            ) { Text(stringResource(R.string.continue_btn)) }
         }
     }
 }

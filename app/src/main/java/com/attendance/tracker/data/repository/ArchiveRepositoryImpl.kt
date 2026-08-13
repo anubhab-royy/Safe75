@@ -19,13 +19,15 @@ import com.attendance.tracker.data.local.database.entity.ScheduleEntity
 import com.attendance.tracker.data.local.database.entity.SubjectEntity
 import com.attendance.tracker.domain.model.ArchiveData
 import com.attendance.tracker.domain.model.ArchiveSubjectStat
+import com.attendance.tracker.domain.model.Attendance
 import com.attendance.tracker.domain.model.ResetOptions
 import com.attendance.tracker.domain.model.ResetPreview
 import com.attendance.tracker.domain.model.ResetResult
 import com.attendance.tracker.domain.model.RestoreOptions
 import com.attendance.tracker.domain.model.RestoreResult
+import com.attendance.tracker.core.common.DispatcherProvider
 import com.attendance.tracker.domain.repository.ArchiveRepository
-import kotlinx.coroutines.Dispatchers
+import com.attendance.tracker.domain.usecase.attendance.CalculateAttendanceStatisticsUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -47,7 +49,9 @@ class ArchiveRepositoryImpl @Inject constructor(
     private val semesterDao: SemesterDao,
     private val attendanceDao: AttendanceDao,
     private val serializer: BackupSerializer,
-    private val deserializer: BackupDeserializer
+    private val deserializer: BackupDeserializer,
+    private val calculateStatistics: CalculateAttendanceStatisticsUseCase,
+    private val dispatcherProvider: DispatcherProvider
 ) : ArchiveRepository {
 
     // -------------------------------------------------------------------------
@@ -68,7 +72,7 @@ class ArchiveRepositoryImpl @Inject constructor(
         name: String,
         startDate: LocalDate,
         endDate: LocalDate
-    ): Long = withContext(Dispatchers.IO) {
+    ): Long = withContext(dispatcherProvider.io) {
         val subjects = subjectDao.getSubjects().map { e ->
             BackupSubjectDto(e.id, e.name, e.facultyName, e.color,
                 e.requiredAttendancePercentage, e.personalAttendanceGoal, e.createdAt, e.updatedAt)
@@ -82,13 +86,7 @@ class ArchiveRepositoryImpl @Inject constructor(
                 e.status.name, e.remarks, e.createdAt, e.updatedAt)
         }
 
-        // Compute stats (excluding CANCELLED from denominator)
-        val totalClasses = attendance.size
-        val present = attendance.count { it.status == "PRESENT" }
-        val absent = attendance.count { it.status == "ABSENT" }
-        val cancelled = attendance.count { it.status == "CANCELLED" }
-        val denominator = totalClasses - cancelled
-        val overallPct = if (denominator > 0) (present.toDouble() / denominator) * 100.0 else 0.0
+        val stats = calculateArchiveStatistics(attendance)
 
         val entity = ArchiveEntity(
             name = name,
@@ -97,11 +95,11 @@ class ArchiveRepositoryImpl @Inject constructor(
             subjectsJson = serializer.serializeSubjects(subjects),
             schedulesJson = serializer.serializeSchedules(schedules),
             attendanceJson = serializer.serializeAttendance(attendance),
-            totalClasses = totalClasses,
-            presentCount = present,
-            absentCount = absent,
-            cancelledCount = cancelled,
-            overallPercentage = overallPct
+            totalClasses = stats.totalClasses,
+            presentCount = stats.presentCount,
+            absentCount = stats.absentCount,
+            cancelledCount = stats.cancelledCount,
+            overallPercentage = archivePercentage(stats.attendancePercentage)
         )
         archiveDao.insertArchive(entity)
     }
@@ -110,7 +108,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     // Get Archive
     // -------------------------------------------------------------------------
 
-    override suspend fun getArchive(id: Long): ArchiveData? = withContext(Dispatchers.IO) {
+    override suspend fun getArchive(id: Long): ArchiveData? = withContext(dispatcherProvider.io) {
         archiveDao.getArchiveById(id)?.toDomainWithSubjectStats()
     }
 
@@ -118,7 +116,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     // Delete Archive
     // -------------------------------------------------------------------------
 
-    override suspend fun deleteArchive(id: Long) = withContext(Dispatchers.IO) {
+    override suspend fun deleteArchive(id: Long) = withContext(dispatcherProvider.io) {
         archiveDao.deleteArchiveById(id)
         Unit
     }
@@ -128,7 +126,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     // -------------------------------------------------------------------------
 
     override suspend fun restoreArchive(id: Long, options: RestoreOptions): RestoreResult =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             val entity = archiveDao.getArchiveById(id)
                 ?: return@withContext RestoreResult.Failure("Archive not found.")
             try {
@@ -188,7 +186,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     // -------------------------------------------------------------------------
 
     override suspend fun resetSemester(options: ResetOptions): ResetResult =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             try {
                 var attendanceDeleted = 0
                 var subjectsDeleted = 0
@@ -218,7 +216,7 @@ class ArchiveRepositoryImpl @Inject constructor(
     // Reset Preview
     // -------------------------------------------------------------------------
 
-    override suspend fun getResetPreview(): ResetPreview = withContext(Dispatchers.IO) {
+    override suspend fun getResetPreview(): ResetPreview = withContext(dispatcherProvider.io) {
         ResetPreview(
             subjectCount = subjectDao.getSubjects().size,
             scheduleCount = scheduleDao.getAllSchedules().size,
@@ -231,43 +229,50 @@ class ArchiveRepositoryImpl @Inject constructor(
     // Mapping Helpers
     // -------------------------------------------------------------------------
 
-    private fun ArchiveEntity.toDomain(): ArchiveData = ArchiveData(
-        id = id,
-        name = name,
-        startDate = LocalDate.parse(startDate),
-        endDate = LocalDate.parse(endDate),
-        archivedAt = archivedAt,
-        totalClasses = totalClasses,
-        presentCount = presentCount,
-        absentCount = absentCount,
-        cancelledCount = cancelledCount,
-        overallPercentage = overallPercentage,
-        subjectStats = emptyList()
-    )
+    private fun ArchiveEntity.toDomain(): ArchiveData {
+        val attendance = deserializer.deserializeAttendance(attendanceJson)
+        val stats = calculateArchiveStatistics(attendance)
+        return ArchiveData(
+            id = id,
+            name = name,
+            startDate = LocalDate.parse(startDate),
+            endDate = LocalDate.parse(endDate),
+            archivedAt = archivedAt,
+            totalClasses = stats.totalClasses,
+            presentCount = stats.presentCount,
+            absentCount = stats.absentCount,
+            cancelledCount = stats.cancelledCount,
+            overallPercentage = archivePercentage(stats.attendancePercentage),
+            medicalLeaveCount = stats.medicalLeaveCount,
+            withMedicalPercentage = archivePercentage(stats.withMedicalPercentage),
+            subjectStats = emptyList(),
+            attendanceCount = attendance.size
+        )
+    }
 
     private fun ArchiveEntity.toDomainWithSubjectStats(): ArchiveData {
         val subjects = deserializer.deserializeSubjects(subjectsJson)
         val attendance = deserializer.deserializeAttendance(attendanceJson)
+        val schedules = deserializer.deserializeSchedules(schedulesJson)
 
         val stats = subjects.map { subject ->
             val subjectAttendance = attendance.filter { it.subjectId == subject.id }
-            val total = subjectAttendance.size
-            val present = subjectAttendance.count { it.status == "PRESENT" }
-            val absent = subjectAttendance.count { it.status == "ABSENT" }
-            val cancelled = subjectAttendance.count { it.status == "CANCELLED" }
-            val denom = total - cancelled
-            val pct = if (denom > 0) (present.toDouble() / denom) * 100.0 else 0.0
+            val subjectStats = calculateArchiveStatistics(subjectAttendance)
             ArchiveSubjectStat(
                 subjectId = subject.id,
                 subjectName = subject.name,
                 color = subject.color,
-                totalClasses = total,
-                presentCount = present,
-                absentCount = absent,
-                cancelledCount = cancelled,
-                attendancePercentage = pct
+                totalClasses = subjectStats.totalClasses,
+                presentCount = subjectStats.presentCount,
+                absentCount = subjectStats.absentCount,
+                cancelledCount = subjectStats.cancelledCount,
+                attendancePercentage = archivePercentage(subjectStats.attendancePercentage),
+                medicalLeaveCount = subjectStats.medicalLeaveCount,
+                withMedicalPercentage = archivePercentage(subjectStats.withMedicalPercentage)
             )
         }
+
+        val overallStats = calculateArchiveStatistics(attendance)
 
         return ArchiveData(
             id = id,
@@ -275,12 +280,34 @@ class ArchiveRepositoryImpl @Inject constructor(
             startDate = LocalDate.parse(startDate),
             endDate = LocalDate.parse(endDate),
             archivedAt = archivedAt,
-            totalClasses = totalClasses,
-            presentCount = presentCount,
-            absentCount = absentCount,
-            cancelledCount = cancelledCount,
-            overallPercentage = overallPercentage,
-            subjectStats = stats
+            totalClasses = overallStats.totalClasses,
+            presentCount = overallStats.presentCount,
+            absentCount = overallStats.absentCount,
+            cancelledCount = overallStats.cancelledCount,
+            overallPercentage = archivePercentage(overallStats.attendancePercentage),
+            medicalLeaveCount = overallStats.medicalLeaveCount,
+            withMedicalPercentage = archivePercentage(overallStats.withMedicalPercentage),
+            subjectStats = stats,
+            scheduleCount = schedules.size,
+            attendanceCount = attendance.size
         )
     }
+
+    private fun calculateArchiveStatistics(records: List<BackupAttendanceDto>) =
+        calculateStatistics(records.mapNotNull { it.toDomainOrNull() }, 75, 85)
+
+    private fun BackupAttendanceDto.toDomainOrNull(): Attendance? = runCatching {
+        Attendance(
+            id = id,
+            subjectId = subjectId,
+            scheduleId = scheduleId,
+            date = LocalDate.parse(date),
+            status = AttendanceStatus.valueOf(status),
+            remarks = remarks,
+            createdAt = createdAt,
+            updatedAt = updatedAt
+        )
+    }.getOrNull()
+
+    private fun archivePercentage(value: Double): Double = if (value < 0.0) 0.0 else value
 }

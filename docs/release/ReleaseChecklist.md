@@ -7,10 +7,8 @@ Checklist for producing, signing, testing, and publishing the **Safe75** v1.0.0 
 ## 1. Pre-build checks
 
 - [ ] Working tree clean / desired changes committed on `main`.
-- [ ] `./gradlew :app:testDebugUnitTest` green (116 tests).
-- [ ] `./gradlew :app:lintDebug` has no new errors (one known pre-existing
-      `RemoveWorkManagerInitializer` warning may appear; it is a Phase 6
-      artifact and non-blocking).
+- [ ] `./gradlew :app:testDebugUnitTest` green.
+- [ ] `./gradlew :app:lintDebug` passes without errors; review remaining warnings.
 - [ ] `./gradlew :app:assembleDebug` green.
 - [ ] Manual smoke test on a physical device and an emulator:
   - Onboarding → Dashboard → add subject → add schedule → mark attendance.
@@ -50,6 +48,7 @@ keyPassword=********
   ```
 - [ ] Install on a device and smoke-test the same flows as step 1
       (release build is minified/R8-obfuscated).
+- [ ] Build with `SAFE75_API_BASE_URL` set to the production HTTPS endpoint.
 - [ ] Optional: run `./gradlew :app:bundletool` / produce an AAB with
       `./gradlew :app:bundleRelease` for Play upload.
 
@@ -72,8 +71,8 @@ app variant:
       bullets, category, tags.
 - [ ] `docs/release/PrivacyPolicy.md` — publish at a public URL and link it in
       the Play Console data-safety form.
-- [ ] Data-safety form: **no data collected / no internet permission**, data is
-      stored locally on-device only.
+- [ ] Data-safety form accurately describes explicit bug-report uploads,
+      diagnostics, device metadata, and optional screenshots.
 - [ ] Screenshots (phone + tablet) and a feature graphic (1024×500).
 - [ ] App icon set from the design system.
 

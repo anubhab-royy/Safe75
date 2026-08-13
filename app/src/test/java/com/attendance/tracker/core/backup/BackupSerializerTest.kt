@@ -9,8 +9,15 @@ import org.junit.Test
  */
 class BackupSerializerTest {
 
-    private val serializer = BackupSerializer()
-    private val deserializer = BackupDeserializer()
+    private val json = kotlinx.serialization.json.Json {
+        prettyPrint = true
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
+
+    private val serializer = BackupSerializer(json)
+    private val deserializer = BackupDeserializer(json)
 
     private fun sampleData(): BackupData {
         val now = 1_700_000_000_000L
@@ -85,6 +92,25 @@ class BackupSerializerTest {
         assertTrue(json.contains("\"metadata\""))
         assertTrue(json.contains("\"attendanceRecords\""))
         assertTrue(json.contains("\"semesterVersions\""))
+    }
+
+    @Test
+    fun testMedicalLeave_serializesAndDeserializesAsEnumName() {
+        val data = sampleData().copy(
+            attendanceRecords = listOf(
+                sampleData().attendanceRecords.first().copy(status = "MEDICAL_LEAVE")
+            )
+        )
+
+        val serialized = serializer.serialize(data)
+        val parsed = deserializer.deserialize(serialized).getOrThrow()
+
+        assertTrue(serialized.contains("\"status\": \"MEDICAL_LEAVE\""))
+        assertEquals("MEDICAL_LEAVE", parsed.attendanceRecords.first().status)
+        assertEquals(
+            com.attendance.tracker.core.model.AttendanceStatus.MEDICAL_LEAVE,
+            com.attendance.tracker.core.model.AttendanceStatus.valueOf(parsed.attendanceRecords.first().status)
+        )
     }
 
     @Test

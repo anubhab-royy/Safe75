@@ -10,9 +10,17 @@ import org.junit.Test
 
 class SemanticParserTest {
 
+    init {
+        com.attendance.tracker.core.logger.Logger.setEngine(com.attendance.tracker.core.logger.NoOpLogEngine())
+    }
+
     private val validationEngine = ValidationEngine()
     private val headerInterpreter = HeaderInterpreter()
-    private val parser = SemanticParser(validationEngine, headerInterpreter)
+    private val parser = SemanticParser(
+        validationEngine,
+        headerInterpreter,
+        kotlinx.serialization.json.Json { prettyPrint = true }
+    )
 
     @Test
     fun testParseTimetable_extractsMergedAndIndividualClassesCorrectly() {

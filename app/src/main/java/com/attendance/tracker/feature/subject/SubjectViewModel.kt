@@ -1,5 +1,9 @@
 package com.attendance.tracker.feature.subject
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.attendance.tracker.core.common.AppError
@@ -42,6 +46,7 @@ enum class SubjectSortOption {
 /**
  * ViewModel for coordinating Subject Management actions and state.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SubjectViewModel @Inject constructor(
     private val observeSubjectsUseCase: ObserveSubjectsUseCase,
@@ -75,15 +80,17 @@ class SubjectViewModel @Inject constructor(
     init {
         loadSubjects()
         viewModelScope.launch {
-            semesterRepository.observeActiveVersion().collect { active ->
-                if (active != null) {
-                    scheduleRepository.observeSchedulesForVersion(active.id).collect { list ->
-                        _schedules.value = list
+            semesterRepository.observeActiveVersion()
+                .flatMapLatest { active ->
+                    if (active != null) {
+                        scheduleRepository.observeSchedulesForVersion(active.id)
+                    } else {
+                        flowOf(emptyList())
                     }
-                } else {
-                    _schedules.value = emptyList()
                 }
-            }
+                .collect { list ->
+                    _schedules.value = list
+                }
         }
     }
 
@@ -154,6 +161,7 @@ class SubjectViewModel @Inject constructor(
                         presentCount = stats.presentCount,
                         totalClasses = stats.totalClasses,
                         percentage = stats.attendancePercentage,
+                        withMedicalPercentage = stats.withMedicalPercentage,
                         safeMissCount = stats.remainingSafeClasses,
                         classesNeeded = stats.classesNeededToReachGoal,
                         safetyStatus = status,

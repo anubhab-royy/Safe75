@@ -4,8 +4,12 @@ import android.app.Application
 import android.os.StrictMode
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.attendance.tracker.core.diagnostics.DiagnosticsManager
+import com.attendance.tracker.core.diagnostics.SafeLogEngine
 import com.attendance.tracker.core.logger.Logger
 import com.attendance.tracker.core.notification.TrackerNotificationManager
+import com.attendance.tracker.feature.bugreport.data.BugReportConnectivityMonitor
+import com.attendance.tracker.feature.bugreport.data.BugReportWorkScheduler
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -19,6 +23,18 @@ class MainApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    @Inject
+    lateinit var safeLogger: SafeLogEngine
+
+    @Inject
+    lateinit var diagnosticsManager: DiagnosticsManager
+
+    @Inject
+    lateinit var bugReportConnectivityMonitor: BugReportConnectivityMonitor
+
+    @Inject
+    lateinit var bugReportWorkScheduler: BugReportWorkScheduler
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -26,17 +42,16 @@ class MainApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        // Diagnostics first so release crashes (including during startup) are captured.
+        Logger.setEngine(safeLogger)
+        diagnosticsManager.install()
+        bugReportConnectivityMonitor.start()
+        bugReportWorkScheduler.enqueuePendingUploads()
+
         if (BuildConfig.DEBUG) {
             enableStrictMode()
         }
         TrackerNotificationManager.createNotificationChannelsAsync(this)
-
-        // Initialize OpenCV
-        if (org.opencv.android.OpenCVLoader.initLocal()) {
-            Logger.d("MainApplication", "OpenCV loaded successfully")
-        } else {
-            Logger.e("MainApplication", "OpenCV initialization failed!")
-        }
     }
 
     /**

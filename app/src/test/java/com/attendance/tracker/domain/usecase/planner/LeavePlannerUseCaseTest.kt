@@ -87,6 +87,28 @@ class LocalFakeAttendanceRepository : com.attendance.tracker.domain.repository.A
     override fun searchAttendance(query: String): Flow<List<Attendance>> = _list.map {
         it.filter { s -> s.remarks?.contains(query, ignoreCase = true) == true }
     }
+
+    override suspend fun saveOcrAttendanceBatch(records: List<Attendance>): Int {
+        var count = 0
+        val current = _list.value.toMutableList()
+        for (record in records) {
+            val existing = current.find { it.subjectId == record.subjectId && it.scheduleId == record.scheduleId && it.date == record.date }
+            if (existing == null) {
+                val id = if (record.id == 0L) (current.size + 1).toLong() else record.id
+                current.add(record.copy(id = id))
+                count++
+            } else if (existing.remarks?.contains("Imported via OCR") == true) {
+                val idx = current.indexOfFirst { it.id == existing.id }
+                if (idx != -1) {
+                    current[idx] = existing.copy(status = record.status, updatedAt = System.currentTimeMillis())
+                    count++
+                }
+            }
+            // Existing manual record is preserved (not updated)
+        }
+        _list.value = current
+        return count
+    }
 }
 
 class LocalFakeSubjectRepository : com.attendance.tracker.domain.repository.SubjectRepository {

@@ -40,4 +40,6 @@ interface AttendanceRepository {
     fun countCancelled(): Flow<Int>
 
     fun searchAttendance(query: String): Flow<List<Attendance>>
+
+    suspend fun saveOcrAttendanceBatch(records: List<Attendance>): Int
 }
